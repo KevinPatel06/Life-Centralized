@@ -90,6 +90,7 @@ function AppStack() {
         <Stack.Screen name="quick-add" options={{ ...sheet, sheetAllowedDetents: 'fitToContents' }} />
         <Stack.Screen name="plan" options={{ ...sheet, sheetAllowedDetents: [1] }} />
         <Stack.Screen name="checkin/[date]" options={{ ...sheet, sheetAllowedDetents: [1] }} />
+        <Stack.Screen name="task/[id]" options={{ ...sheet, sheetAllowedDetents: [1] }} />
       </Stack>
     </>
   );
