@@ -12,8 +12,11 @@ export type PlanKind = 'lunch' | 'dinner' | 'hangout' | 'other';
 export type Background = 'linen' | 'beige' | 'oat' | 'charcoal';
 export type CardColor = 'sage' | 'cocoa';
 
-/** A null end means the block runs until midnight (Wind down with no bedtime). */
-export interface BlockTimes { id: BlockId; start: Minutes; end: Minutes | null }
+/**
+ * A null end means the block runs until midnight (Wind down with no bedtime).
+ * `label` is a short line for a block with nothing to tick, e.g. "Work" or "Free time, then bed".
+ */
+export interface BlockTimes { id: BlockId; start: Minutes; end: Minutes | null; label?: string }
 /** A weekday (0 = Monday) and block, used for backup slots in the template. */
 export interface Slot { weekday: number; block: BlockId }
 
