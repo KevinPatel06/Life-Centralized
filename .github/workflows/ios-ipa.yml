@@ -1,0 +1,59 @@
+name: iOS IPA
+
+# Builds an unsigned IPA for LiveContainer and publishes it as a GitHub Release.
+# Spec §7 says "push to main"; this runs on every branch because work happens on
+# feature branches and manual runs only work for workflows on the default branch.
+# Docs-only commits can skip the build with [skip ci] in the commit message.
+on:
+  push:
+    branches: ['**']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ios-ipa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    env:
+      BUILD_NUMBER: ${{ github.run_number }}
+      CI: 1
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # Expo SDK 58 needs a recent Xcode; pick the newest stable one installed on the runner.
+      - name: Select newest stable Xcode
+        run: |
+          XCODE=$(ls -d /Applications/Xcode_*.app | grep -viE 'beta|_rc' | sort -V | tail -1)
+          sudo xcode-select -s "$XCODE"
+          xcodebuild -version
+
+      - run: npm ci
+
+      - name: Typecheck, lint, test
+        run: npm run check
+
+      - name: Generate the iOS project
+        run: npx expo prebuild --platform ios --clean
+
+      - name: Build unsigned IPA
+        run: bash scripts/build-ipa.sh
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PRE=$([ "$GITHUB_REF_NAME" = "main" ] || echo "--prerelease")
+          gh release create "build-$GITHUB_RUN_NUMBER" dist/LifeCentralized.ipa \
+            --target "$GITHUB_SHA" --title "Build $GITHUB_RUN_NUMBER ($GITHUB_REF_NAME)" \
+            --notes "Unsigned IPA for LiveContainer. Commit $GITHUB_SHA." $PRE
