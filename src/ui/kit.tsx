@@ -1,8 +1,9 @@
 // Shared building blocks, styled after the approved mockup.
 import type { ReactNode } from 'react';
-import { Pressable, ScrollView, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, TextInput, type TextInputProps, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { font } from './fonts';
 import { Icon, type IconName } from './Icon';
 import type { Theme } from './theme';
 import { useTheme } from './ThemeContext';
@@ -146,6 +147,34 @@ export function Switch({ value, onChange, label }: { value: boolean; onChange: (
     >
       <View style={[styles.knob, { left: value ? 23 : 3 }]} />
     </Pressable>
+  );
+}
+
+/** A text field on a card, after the mockup's .field. */
+export function Field({ style, multiline, ...rest }: TextInputProps) {
+  const t = useTheme();
+  return (
+    <TextInput
+      placeholderTextColor={t.muted}
+      selectionColor={t.accent}
+      multiline={multiline}
+      {...rest}
+      style={[
+        { minHeight: multiline ? 120 : 48, borderRadius: 14, backgroundColor: t.fieldBg, color: t.ink, paddingHorizontal: 14, fontFamily: font('body', 500), fontSize: 16 },
+        multiline ? { paddingTop: 12, paddingBottom: 12, textAlignVertical: 'top' } : null,
+        style,
+      ]}
+    />
+  );
+}
+
+/** A small uppercase-free field label inside sheets. */
+export function Label({ children }: { children: ReactNode }) {
+  const t = useTheme();
+  return (
+    <Txt size={13} weight={600} color={t.muted}>
+      {children}
+    </Txt>
   );
 }
 
