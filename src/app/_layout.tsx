@@ -9,6 +9,7 @@ import { bootState, refreshDay } from '../data/boot';
 import { openAppDb } from '../data/openDb';
 import { type Store, createStore } from '../data/store';
 import { StoreProvider } from '../data/StoreContext';
+import { toISODate } from '../lib/dates';
 import { FONT_ASSETS } from '../ui/fonts';
 import { useTheme } from '../ui/ThemeContext';
 
@@ -38,7 +39,19 @@ export default function RootLayout() {
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'active') refreshDay(store, new Date());
     });
-    return () => sub.remove();
+    // Roll the day over at midnight even if the app stays open.
+    let day = toISODate(new Date());
+    const tick = setInterval(() => {
+      const today = toISODate(new Date());
+      if (today !== day) {
+        day = today;
+        refreshDay(store, new Date());
+      }
+    }, 60_000);
+    return () => {
+      sub.remove();
+      clearInterval(tick);
+    };
   }, [store]);
 
   if (failure) {
