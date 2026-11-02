@@ -204,3 +204,17 @@ export function saveCheckin(s: AppState, view: CheckinView, d: CheckinDraft, now
   days[date] = { ...base, ticks, checkin: { at: stamp, answers, outcomes, unplannedTasks } };
   return { ...s, days, moves, tasks };
 }
+
+export type CheckinStatus = { state: 'none' } | { state: 'pending' } | { state: 'done'; summary: string };
+
+/** What the Week marker and Today's End my day button show for a date. */
+export function checkinStatus(s: AppState, date: ISODate, today: ISODate): CheckinStatus {
+  if (!canOpenCheckin(s, date, today)) return { state: 'none' };
+  const checkin = s.days[date]?.checkin;
+  if (!checkin) return { state: 'pending' };
+  const outcomes = Object.values(checkin.outcomes);
+  const doneTasks = Object.values(s.tasks).filter((t) => t.planned?.date === date && t.doneAt).length;
+  const done = outcomes.filter((o) => o === 'done').length + doneTasks;
+  const total = outcomes.length + doneTasks + checkin.unplannedTasks.length;
+  return { state: 'done', summary: `Checked in · ${done} of ${total} done` };
+}

@@ -4,6 +4,7 @@ import {
   buildCheckin,
   canOpenCheckin,
   canSaveCheckin,
+  checkinStatus,
   decide,
   promptOf,
   saveCheckin,
@@ -148,4 +149,28 @@ test('saving clears the not-checked-in flag', () => {
   const s = on(MON);
   s.days[MON] = { ...s.days[MON], notCheckedIn: true };
   expect(checkInMonday(s, MON, 'skip').days[MON].notCheckedIn).toBeUndefined();
+});
+
+describe('checkinStatus', () => {
+  const WED = '2026-11-04';
+
+  test('pending for today and earlier this week, none otherwise', () => {
+    const s = on(WED);
+    expect(checkinStatus(s, MON, WED)).toEqual({ state: 'pending' });
+    expect(checkinStatus(s, WED, WED)).toEqual({ state: 'pending' });
+    expect(checkinStatus(s, THU, WED)).toEqual({ state: 'none' });
+    expect(checkinStatus(s, '2026-11-01', WED)).toEqual({ state: 'none' });
+  });
+
+  test('a checked-in day shows how much got done, counting tasks', () => {
+    const s = on(WED);
+    s.days['2026-11-03'] = { ...s.days['2026-11-03'], checkin: { at: 'x', answers: {}, outcomes: { a: 'done', b: 'missed' }, unplannedTasks: [] } };
+    expect(checkinStatus(s, '2026-11-03', WED)).toEqual({ state: 'done', summary: 'Checked in · 1 of 2 done' });
+    s.tasks = {
+      t1: task('t1', { planned: { date: '2026-11-03' }, doneAt: 'x' }),
+      t2: task('t2', {}),
+    };
+    s.days['2026-11-03'] = { ...s.days['2026-11-03'], checkin: { ...s.days['2026-11-03'].checkin!, unplannedTasks: ['t2'] } };
+    expect(checkinStatus(s, '2026-11-03', WED)).toEqual({ state: 'done', summary: 'Checked in · 2 of 4 done' });
+  });
 });

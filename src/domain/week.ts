@@ -1,6 +1,7 @@
 // The Week screen as data (spec §4 Week): this week and up to 8 ahead.
 import { addDays, minutesOf, toISODate, weekStartOf } from '../lib/dates';
 import { clock, clockAmPm, shortDate, weekRange, weekTitle, weekdayLetter, weekdayName, weekdayShort, whenLabel } from '../lib/format';
+import { type CheckinStatus, checkinStatus } from './checkin';
 import { type DayEntry, assembleDay, dayRecordFor, isBirthday, isTickable } from './day';
 import { goalCounts } from './lifecycle';
 import { canTick } from './ticks';
@@ -29,6 +30,7 @@ export interface WeekDay {
   hasPlans: boolean;
   cards: WeekCard[];
   rows: WeekRow[];
+  checkin: CheckinStatus;
 }
 export interface WeekView {
   offset: number;
@@ -100,6 +102,7 @@ export function buildWeek(s: AppState, now: Date, offset: number): WeekView {
       hasPlans: cards.length > 0,
       cards,
       rows,
+      checkin: checkinStatus(s, date, today),
     };
   });
 

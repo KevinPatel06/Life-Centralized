@@ -1,6 +1,7 @@
 // The Today screen as data (spec §4 Today): the current block in full, everything else compact.
 import { addDays, minutesOf, toISODate } from '../lib/dates';
 import { BLOCK_NAME, clock, clockAmPm, plural, shortDate, weekdayName, weekdayShort, whenLabel } from '../lib/format';
+import { type CheckinStatus, checkinStatus } from './checkin';
 import { type AssembledBlock, type DayEntry, type TickEntry, assembleDay, isTickable } from './day';
 import { effectiveUrgency } from './tasks';
 import { blockAt } from './template';
@@ -27,6 +28,7 @@ export interface TodayView {
   blocks: TodayBlock[];
   buddy: string;
   tomorrow?: string;
+  checkin: CheckinStatus;
 }
 
 const firstLine = (text: string) => text.split('\n')[0].trim();
@@ -126,6 +128,7 @@ export function buildToday(s: AppState, now: Date): TodayView {
     phase,
     blocks: view,
     buddy: '',
+    checkin: checkinStatus(s, today, today),
   };
 
   let tomorrowFirst: string | undefined;

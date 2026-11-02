@@ -89,3 +89,10 @@ test('a checked-in block shows its answer as the mark', () => {
   s.days['2026-11-02'] = { ...s.days['2026-11-02'], checkin: { at: 'x', answers: { morning: 'partly' }, outcomes: {}, unplannedTasks: [] } };
   expect(buildToday(s, new Date(2026, 10, 2, 18, 40)).blocks[0].mark).toBe('partly');
 });
+
+test('today carries its check-in status for End my day', () => {
+  const s = monday();
+  expect(buildToday(s, new Date(2026, 10, 2, 18, 40)).checkin).toEqual({ state: 'pending' });
+  s.days['2026-11-02'] = { ...s.days['2026-11-02'], checkin: { at: 'x', answers: {}, outcomes: { m: 'done', e: 'moved' }, unplannedTasks: [] } };
+  expect(buildToday(s, new Date(2026, 10, 2, 21, 30)).checkin).toEqual({ state: 'done', summary: 'Checked in · 1 of 2 done' });
+});

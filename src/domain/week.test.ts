@@ -70,3 +70,9 @@ test('a day with only a recurring plan has plans', () => {
   expect(friday.hasPlans).toBe(true);
   expect(friday.cards).toEqual([{ key: 'rec:fr', time: 'Evening', title: 'Recurring F', kind: 'hangout', source: 'routine' }]);
 });
+
+test('days carry their check-in status', () => {
+  const days = buildWeek(state(), wednesday, 0).days;
+  expect(days[0].checkin).toEqual({ state: 'pending' });
+  expect(days[3].checkin).toEqual({ state: 'none' });
+});
