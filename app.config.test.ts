@@ -26,3 +26,10 @@ test('calendar permission is configured and notifications are not', () => {
   expect(plugins).toContain('Centralized');
   expect(plugins).not.toContain('expo-notifications');
 });
+
+test('the app runs on Expo Router with bundled fonts and the time picker', () => {
+  const c = build({});
+  expect(c.scheme).toBe('lifecentralized');
+  const names = (c.plugins ?? []).map((p) => (Array.isArray(p) ? p[0] : p));
+  expect(names).toEqual(expect.arrayContaining(['expo-router', 'expo-font', '@react-native-community/datetimepicker']));
+});

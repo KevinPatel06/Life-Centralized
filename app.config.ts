@@ -7,6 +7,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   name: 'Life Centralized',
   slug: 'life-centralized',
   version: '0.1.0',
+  scheme: 'lifecentralized',
   orientation: 'portrait',
   icon: './assets/icon.png',
   userInterfaceStyle: 'automatic',
@@ -36,5 +37,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ],
     'expo-sqlite',
     'expo-sharing',
+    'expo-router',
+    'expo-font',
+    '@react-native-community/datetimepicker',
   ],
 });

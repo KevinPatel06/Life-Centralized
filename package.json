@@ -1,7 +1,7 @@
 {
   "name": "life-centralized",
   "version": "0.1.0",
-  "main": "index.ts",
+  "main": "expo-router/entry",
   "dependencies": {
     "@expo-google-fonts/fredoka": "^0.4.1",
     "@expo-google-fonts/lexend": "^0.4.1",

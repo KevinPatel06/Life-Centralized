@@ -52,6 +52,8 @@ export interface Theme extends BackgroundTokens, CardTokens {
   accent: string;
   nowChip: string;
   nowChipInk: string;
+  /** Text on accent-filled buttons. */
+  ringInk: string;
 }
 
 const LIGHT = { doneCheck: '#3F7A55', bubbleBg: '#2B2219', bubbleInk: '#F7F0E3', dark: false };
@@ -102,13 +104,13 @@ export const CARDS: { id: CardColor; name: string; swatch: string; accent: strin
   { id: 'cocoa', name: 'Cocoa', swatch: CARD.cocoa.card, accent: CARD.cocoa.nowRing },
 ];
 
-export function resolveTheme(settings: Settings, scheme: 'light' | 'dark' | null | undefined): Theme {
+export function resolveTheme(settings: Settings, scheme: string | null | undefined): Theme {
   const background = settings.charcoalInDark && scheme === 'dark' ? 'charcoal' : settings.background;
   const cards = {
     ...CARD[settings.cards],
     ...(background === 'charcoal' && settings.cards === 'cocoa' ? CHARCOAL_COCOA : {}),
   };
-  return { ...BG[background], ...cards, accent: cards.nowRing, nowChip: '#F2B04A', nowChipInk: '#2A1C00' };
+  return { ...BG[background], ...cards, accent: cards.nowRing, nowChip: '#F2B04A', nowChipInk: '#2A1C00', ringInk: '#FFFFFF' };
 }
 
 export const TAG_COLOR: Record<Tag, CatKey> = { trading: 'trade', health: 'love', projects: 'wind', life: 'free' };
