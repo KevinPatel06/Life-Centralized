@@ -33,3 +33,23 @@ export function fullState(): AppState {
     },
   };
 }
+
+/**
+ * A small routine. Monday: morning item `m` (gym goal), evening item `e` (trading goal, backup Thursday evening).
+ * Every day: Wind down ends at 23:00, afternoons are labelled "Work".
+ */
+export function routineState(): AppState {
+  const s = emptyState();
+  s.template.days = s.template.days.map((d) => ({
+    ...d,
+    blocks: d.blocks.map((b) => (b.id === 'winddown' ? { ...b, end: 23 * 60 } : b.id === 'afternoon' ? { ...b, label: 'Work' } : b)),
+  }));
+  s.template.days[0].items = [
+    { id: 'm', block: 'morning', title: 'Item M', time: 7 * 60 + 10, goal: 'gym' },
+    { id: 'e', block: 'evening', title: 'Item E', goal: 'trading', backup: { weekday: 3, block: 'evening' } },
+  ];
+  return s;
+}
+
+/** A local date-time as an ISO timestamp. */
+export const localISO = (y: number, m: number, d: number, h = 0, min = 0) => new Date(y, m - 1, d, h, min).toISOString();
