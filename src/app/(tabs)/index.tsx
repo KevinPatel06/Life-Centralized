@@ -61,6 +61,32 @@ export default function TodayScreen() {
         )}
       </View>
 
+      {v.checkin.state === 'pending' ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push({ pathname: '/checkin/[date]', params: { date: v.date } })}
+          style={({ pressed }) => [styles.endDay, { borderColor: t.bgLine, opacity: pressed ? 0.7 : 1 }]}
+        >
+          <Icon name="moon" size={18} color={t.onBg} />
+          <Txt size={15} weight={600}>
+            End my day
+          </Txt>
+        </Pressable>
+      ) : null}
+      {v.checkin.state === 'done' ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityHint="Opens your check-in to change it"
+          onPress={() => router.push({ pathname: '/checkin/[date]', params: { date: v.date } })}
+          style={styles.checkedIn}
+        >
+          <Icon name="check" size={18} color={t.doneCheck} strokeWidth={3} />
+          <Txt size={14} color={t.onBgMuted}>
+            {v.checkin.summary.replace('Checked in', 'Day checked in')}
+          </Txt>
+        </Pressable>
+      ) : null}
+
       {v.tomorrow ? (
         <Txt size={14} color={t.onBgMuted} style={{ paddingHorizontal: 4 }}>
           {v.tomorrow}
@@ -77,4 +103,6 @@ const styles = StyleSheet.create({
   gear: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginTop: -4, marginRight: -6 },
   sub: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8 },
   dot: { width: 5, height: 5, borderRadius: 3 },
+  endDay: { minHeight: 52, borderRadius: 99, borderWidth: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  checkedIn: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
 });

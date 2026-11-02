@@ -91,6 +91,19 @@ export default function WeekScreen() {
               </Txt>
               {d.isToday ? <SmallTag label="Today" today /> : null}
               {d.label ? <SmallTag label={d.label} /> : null}
+              {d.checkin.state !== 'none' ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={d.checkin.state === 'pending' ? `Check in ${d.name}` : `${d.checkin.summary}. Change`}
+                  onPress={() => router.push({ pathname: '/checkin/[date]', params: { date: d.date } })}
+                  hitSlop={12}
+                  style={[styles.ci, { backgroundColor: d.checkin.state === 'pending' ? t.nowChip : t.pillBg }]}
+                >
+                  <Txt size={11.5} weight={600} color={d.checkin.state === 'pending' ? t.nowChipInk : t.pillMuted}>
+                    {d.checkin.state === 'pending' ? 'Check in' : d.checkin.summary.replace('Checked in · ', '✓ ')}
+                  </Txt>
+                </Pressable>
+              ) : null}
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={`Add a plan on ${d.name}`}
@@ -167,4 +180,5 @@ const styles = StyleSheet.create({
   addCircle: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   info: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap', paddingHorizontal: 2 },
   bk: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 99 },
+  ci: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 99 },
 });
