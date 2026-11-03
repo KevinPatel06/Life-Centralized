@@ -99,6 +99,11 @@ export function deleteTask(s: AppState, id: string): AppState {
   return { ...s, tasks };
 }
 
+/** Undo a delete: put the task back exactly as it was. */
+export function restoreTask(s: AppState, task: Task): AppState {
+  return { ...s, tasks: { ...s.tasks, [task.id]: task } };
+}
+
 /** "Today", "Tomorrow · Evening", "Sat", or "Nov 10th". */
 export function plannedLabel(p: { date: ISODate; block?: BlockId }, today: ISODate): string {
   const day =

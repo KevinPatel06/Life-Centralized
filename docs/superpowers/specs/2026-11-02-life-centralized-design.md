@@ -164,6 +164,7 @@ Priorities matter, but they come second to the routine. The app also has to make
   - Unchecked events disappear from Week and Today straight away.
 - **Staying in sync (my call):**
   - The app re-reads on launch and when it returns to the foreground.
+  - **Settings → "Sync iPhone calendar now"** re-reads on demand (owner, 2026-11-03).
   - **New events in calendars that are kept come in on their own.**
   - Events unchecked one at a time stay hidden, matched by event identifier plus occurrence date.
   - A calendar switched off stays off.
@@ -180,6 +181,7 @@ Priorities matter, but they come second to the routine. The app also has to make
 - **Inbox notes** have two actions:
   - **Make it a task:** creates a task in **Soon** (first line becomes the title, the rest the note) and shows "Now a task in Priorities · Soon" with **Undo**.
   - **Make it a plan:** opens Add a plan with the text filled in. The note becomes "Turned into a plan".
+- **Holding an inbox note** opens the iPhone menu: Make it a task, Make it a plan, Copy, Delete. Delete happens straight away and offers **Undo** (2026-11-03).
 - **Attached notes:** every task, plan and imported event can have a note. The **"On tasks & plans"** tab lists all of them, newest first. Tapping one opens its task or plan.
 
 ### 3.8 Quick add (the + in the tab bar)
@@ -200,7 +202,7 @@ These follow the mockup. Behavior not described here is shown in the mockup.
   - Finished blocks collapse to one dashed line each: name, short summary, and a done, partly or skipped mark.
   - The **current block** is expanded:
     - "NOW" kicker, block name, time range.
-    - Its items, each with a tick and a chip: Routine, Now, Soon or Someday.
+    - Its items, each with a tick and a chip: Routine, Now, Soon or Someday. Tapping a task opens Task details.
     - A subtitle where it applies, like "Backup is Thursday".
     - Plans and iPhone events that fall in the block, e.g. "7:45 PM Haircut · iPhone calendar".
   - Later blocks show as compact cards.
@@ -221,6 +223,7 @@ These follow the mockup. Behavior not described here is shown in the mockup.
     - A small summary once it is.
     - Either one opens that day's check-in.
   - Plan cards: all-day first, then by time. Imported events carry an "iPhone" marker.
+    - Holding one of your own plans opens the iPhone menu: **Edit** and **Delete**. Delete asks first, since it also removes the iPhone event.
   - Routine items as checkboxes.
   - The day note and any backup-slot tag.
 - **Future weeks** show template items and plans, with goal counts at 0.
@@ -243,6 +246,13 @@ These follow the mockup. Behavior not described here is shown in the mockup.
   - A task about to move up shows "Moves to Now on <date>".
 - **Done:** a dashed "Done · N" button that expands the done list.
 - Tapping a row opens Task details.
+- **Holding an open task** opens the iPhone menu (owner, 2026-11-03):
+  - **Move to** ▸ Now / Soon / Someday (the current one checked).
+  - **Plan for** ▸ Today / Tomorrow / Pick a day… (opens Task details), plus Not planned when it is planned.
+  - **Start / Stop** in progress.
+  - **Change tag** ▸ one per tag (the current one checked).
+  - There is no Mark done or Delete in the menu. Done tasks have no menu.
+- Ticking a task done shows "Done: <title>" with **Undo** for a few seconds.
 
 ### Task details (sheet)
 - Editable title.
@@ -250,7 +260,8 @@ These follow the mockup. Behavior not described here is shown in the mockup.
 - Tag.
 - Rows for Due date, Plan it for ("Shows up on Today") and an In progress switch.
 - **Notes**, a large text area.
-- Save.
+- **Changes save as you go** and when the sheet closes, so swiping it away keeps every edit. A blank title is ignored and the old one stays. The button reads **Done** (2026-11-03).
+- **Delete task** happens straight away and offers **Undo**.
 
 ### Notes
 - Title with "N in your inbox".
@@ -281,6 +292,7 @@ These follow the mockup. Behavior not described here is shown in the mockup.
   - Weekly goals (shows the targets).
   - Routine blocks.
   - iPhone calendar ("N events kept").
+  - Sync iPhone calendar now (once imported), showing "Syncing…" then "Synced just now".
   - Back up my data.
 
 ### iPhone calendar
@@ -320,6 +332,10 @@ These follow the mockup. Behavior not described here is shown in the mockup.
   - The full set, including chips, ticks and tab bar, is in the mockup CSS.
 - **Alien buddy:** a mint-green rounded blob (`#45D6A4`) with two dark eyes, a smile and pink cheeks, as in the mockup SVG. The builder may polish it but should keep the character.
 - **Motion:** only small transitions, and respect Reduce Motion.
+  - Rows fade and slide when they arrive, leave or move. Tick boxes pop when ticked. Week slides sideways when the week changes. Nothing animates on a screen's first open.
+  - Everything tappable dips slightly while pressed.
+- **Haptics** (2026-11-03): a light tap for ticks, + and Undo; a selection click for tabs, filters, segments, switches and choice pills; a success buzz when a tick finishes the current block, a check-in is saved, or a manual calendar sync completes.
+- **Undo bar:** a short message with **Undo** floats above the tab bar for about 5 seconds after ticking a priority done, deleting a task or note, or making a note into a task.
 
 ---
 

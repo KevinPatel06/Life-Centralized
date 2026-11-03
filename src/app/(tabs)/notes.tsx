@@ -1,52 +1,58 @@
 // Notes (spec §3.7, §4): quick capture into the inbox, turn notes into tasks or plans, and notes on tasks & plans.
-import { router } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+// Hold an inbox note for its menu: make it a task or a plan, copy it, or delete it.
+import * as Clipboard from 'expo-clipboard';
+import { Link, router } from 'expo-router';
+import { useMemo, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
+import Animated, { FadeIn, FadeOut, LayoutAnimationConfig, LinearTransition } from 'react-native-reanimated';
 
 import { useAppState, useStore } from '../../data/StoreContext';
-import { addNote, attachedNotes, deleteNote, inboxNotes, noteToTask, noteWhen, undoNoteToTask } from '../../domain/notes';
-import { TAG_COLOR } from '../../ui/theme';
+import { addNote, attachedNotes, deleteNote, inboxNotes, noteToTask, noteWhen, restoreNote, undoNoteToTask } from '../../domain/notes';
+import type { Note } from '../../domain/types';
 import { toISODate } from '../../lib/dates';
+import { haptic } from '../../ui/haptics';
 import { Icon, type IconName } from '../../ui/Icon';
 import { Field, Screen, shadow } from '../../ui/kit';
+import { Press } from '../../ui/Press';
+import { TAG_COLOR } from '../../ui/theme';
 import { useTheme } from '../../ui/ThemeContext';
 import { Txt } from '../../ui/Txt';
+import { useUndo } from '../../ui/Undo';
 import { useNow } from '../../ui/useNow';
+
+const move = LinearTransition.duration(220);
 
 export default function NotesScreen() {
   const t = useTheme();
   const s = useAppState();
   const store = useStore();
+  const offerUndo = useUndo();
   const now = useNow(60_000);
   const [text, setText] = useState('');
   const [tab, setTab] = useState<'inbox' | 'attached'>('inbox');
-  const [made, setMade] = useState<string | null>(null); // note id just turned into a task
   const inbox = useMemo(() => inboxNotes(s), [s]);
   const attached = useMemo(() => attachedNotes(s, toISODate(now)), [s, now]);
 
-  useEffect(() => {
-    if (!made) return;
-    const id = setTimeout(() => setMade(null), 6000);
-    return () => clearTimeout(id);
-  }, [made]);
-
   function capture() {
     if (!text.trim()) return;
-    setMade(null);
+    haptic.tap();
     store.update((st) => addNote(st, text, new Date()).state);
     setText('');
   }
 
   function makeTask(noteId: string) {
+    haptic.tap();
     store.update((st) => noteToTask(st, noteId, new Date()).state);
-    setMade(noteId);
+    offerUndo('Now a task in Priorities · Soon', () => store.update((st) => undoNoteToTask(st, noteId)));
   }
 
-  function remove(noteId: string) {
-    Alert.alert('Delete this note?', undefined, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => store.update((st) => deleteNote(st, noteId)) },
-    ]);
+  function makePlan(note: Note) {
+    router.push({ pathname: '/plan', params: { title: note.text.split('\n')[0].trim(), fromNoteId: note.id } });
+  }
+
+  function remove(note: Note) {
+    store.update((st) => deleteNote(st, note.id));
+    offerUndo('Note deleted', () => store.update((st) => restoreNote(st, note)));
   }
 
   return (
@@ -70,120 +76,119 @@ export default function NotesScreen() {
           accessibilityLabel="New note"
           style={[{ flex: 1, backgroundColor: t.card }, shadow(t)]}
         />
-        <Pressable accessibilityRole="button" accessibilityLabel="Save note" onPress={capture} style={[styles.capBtn, { backgroundColor: t.fabBg }]}>
+        <Press accessibilityRole="button" accessibilityLabel="Save note" onPress={capture} dip={0.9} style={[styles.capBtn, { backgroundColor: t.fabBg }]}>
           <Icon name="plus" size={22} color={t.fabInk} strokeWidth={2.6} />
-        </Pressable>
+        </Press>
       </View>
 
       <View style={[styles.seg, { backgroundColor: t.card }]}>
         {(['inbox', 'attached'] as const).map((id) => {
           const on = tab === id;
           return (
-            <Pressable
+            <Press
               key={id}
               accessibilityRole="button"
               accessibilityState={{ selected: on }}
-              onPress={() => setTab(id)}
+              onPress={() => {
+                if (on) return;
+                haptic.select();
+                setTab(id);
+              }}
+              dip={0.97}
               style={[styles.segBtn, on && { backgroundColor: t.accent }]}
             >
               <Txt size={14} weight={600} color={on ? t.ringInk : t.muted}>
                 {id === 'inbox' ? `Inbox · ${inbox.length}` : 'On tasks & plans'}
               </Txt>
-            </Pressable>
+            </Press>
           );
         })}
       </View>
 
-      {tab === 'inbox' ? (
-        <View style={{ gap: 10 }}>
-          {made ? (
-            <View style={[styles.moved, { borderColor: t.doneLine }]}>
-              <Icon name="check" size={18} color={t.doneCheck} strokeWidth={3} />
-              <Txt size={13.5} color={t.onBgMuted} style={{ flex: 1 }}>
-                Now a task in Priorities · Soon
-              </Txt>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => {
-                  store.update((st) => undoNoteToTask(st, made));
-                  setMade(null);
-                }}
-                style={styles.undo}
-              >
-                <Txt size={14} weight={600}>
-                  Undo
+      {/* Notes fade in when added later, not when the tab first opens. */}
+      <LayoutAnimationConfig skipEntering>
+        {tab === 'inbox' ? (
+          <View style={{ gap: 10 }}>
+            {inbox.length === 0 ? (
+              <Animated.View entering={FadeIn} layout={move}>
+                <Txt size={14} color={t.onBgMuted} style={{ textAlign: 'center', paddingVertical: 16 }}>
+                  Your inbox is clear.
                 </Txt>
-              </Pressable>
-            </View>
-          ) : null}
-          {inbox.length === 0 && !made ? (
-            <Txt size={14} color={t.onBgMuted} style={{ textAlign: 'center', paddingVertical: 16 }}>
-              Your inbox is clear.
-            </Txt>
-          ) : null}
-          {inbox.map((n) => (
-            <Pressable key={n.id} onLongPress={() => remove(n.id)} accessibilityHint="Long press to delete" style={[styles.note, { backgroundColor: t.card }, shadow(t)]}>
-              <Txt size={15} weight={500} color={t.ink}>
-                {n.text}
+              </Animated.View>
+            ) : null}
+            {inbox.map((n) => (
+              <Animated.View key={n.id} entering={FadeIn.duration(220)} exiting={FadeOut.duration(160)} layout={move}>
+                {/*
+                  The Link is only here for the iPhone hold menu; a note has no page of its own, so a plain tap is
+                  stopped before it navigates. If that ever slipped through it would land on Notes, where we already are.
+                */}
+                <Link href="/notes" asChild onPress={(e) => e.preventDefault()}>
+                  <Link.Trigger>
+                    <Press accessibilityHint="Hold for more" dip={0.985} style={[styles.note, { backgroundColor: t.card }, shadow(t)]}>
+                      <Txt size={15} weight={500} color={t.ink}>
+                        {n.text}
+                      </Txt>
+                      <Txt size={12.5} color={t.muted}>
+                        {noteWhen(n.createdAt, now)}
+                      </Txt>
+                      <View style={styles.actions}>
+                        <Action label="Make it a task" icon="list" onPress={() => makeTask(n.id)} />
+                        <Action label="Make it a plan" icon="cal" onPress={() => makePlan(n)} />
+                      </View>
+                    </Press>
+                  </Link.Trigger>
+                  <Link.Menu>
+                    <Link.MenuAction title="Make it a task" icon="checklist" onPress={() => makeTask(n.id)} />
+                    <Link.MenuAction title="Make it a plan" icon="calendar.badge.plus" onPress={() => makePlan(n)} />
+                    <Link.MenuAction title="Copy" icon="doc.on.doc" onPress={() => Clipboard.setStringAsync(n.text).catch(() => {})} />
+                    <Link.MenuAction title="Delete" icon="trash" destructive onPress={() => remove(n)} />
+                  </Link.Menu>
+                </Link>
+              </Animated.View>
+            ))}
+          </View>
+        ) : (
+          <View style={{ gap: 10 }}>
+            {attached.length === 0 ? (
+              <Txt size={14} color={t.onBgMuted} style={{ textAlign: 'center', paddingVertical: 16 }}>
+                Notes you add to tasks and plans show up here.
               </Txt>
-              <Txt size={12.5} color={t.muted}>
-                {noteWhen(n.createdAt, now)}
-              </Txt>
-              <View style={styles.actions}>
-                <Action label="Make it a task" icon="list" onPress={() => makeTask(n.id)} />
-                <Action
-                  label="Make it a plan"
-                  icon="cal"
-                  onPress={() => {
-                    setMade(null);
-                    router.push({ pathname: '/plan', params: { title: n.text.split('\n')[0].trim(), fromNoteId: n.id } });
-                  }}
-                />
-              </View>
-            </Pressable>
-          ))}
-        </View>
-      ) : (
-        <View style={{ gap: 10 }}>
-          {attached.length === 0 ? (
-            <Txt size={14} color={t.onBgMuted} style={{ textAlign: 'center', paddingVertical: 16 }}>
-              Notes you add to tasks and plans show up here.
-            </Txt>
-          ) : null}
-          {attached.map((a) => {
-            const look: { icon: IconName; color: string } =
-              a.kind === 'task'
-                ? { icon: 'list', color: t.cat[TAG_COLOR[s.tasks[a.id]?.tag ?? 'life']] }
-                : a.kind === 'plan'
-                  ? { icon: 'cal', color: t.cat.trade }
-                  : { icon: 'phone', color: t.cat.work };
-            const open =
-              a.kind === 'task'
-                ? () => router.push({ pathname: '/task/[id]', params: { id: a.id } })
-                : a.kind === 'plan'
-                  ? () => router.push({ pathname: '/plan', params: { id: a.id } })
-                  : () => router.push({ pathname: '/event/[key]', params: { key: a.id } });
-            return (
-              <Pressable key={a.key} onPress={open} accessibilityRole="button" style={[styles.an, { backgroundColor: t.card }, shadow(t)]}>
-                <View style={[styles.pic, { backgroundColor: t.icBg }]}>
-                  <Icon name={look.icon} size={18} color={look.color} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Txt size={14.5} weight={600} color={t.ink}>
-                    {a.title}
-                  </Txt>
-                  <Txt size={12} color={t.muted}>
-                    {a.sub}
-                  </Txt>
-                  <Txt size={13.5} color={t.ink} style={{ marginTop: 6 }}>
-                    {a.text}
-                  </Txt>
-                </View>
-              </Pressable>
-            );
-          })}
-        </View>
-      )}
+            ) : null}
+            {attached.map((a) => {
+              const look: { icon: IconName; color: string } =
+                a.kind === 'task'
+                  ? { icon: 'list', color: t.cat[TAG_COLOR[s.tasks[a.id]?.tag ?? 'life']] }
+                  : a.kind === 'plan'
+                    ? { icon: 'cal', color: t.cat.trade }
+                    : { icon: 'phone', color: t.cat.work };
+              const open =
+                a.kind === 'task'
+                  ? () => router.push({ pathname: '/task/[id]', params: { id: a.id } })
+                  : a.kind === 'plan'
+                    ? () => router.push({ pathname: '/plan', params: { id: a.id } })
+                    : () => router.push({ pathname: '/event/[key]', params: { key: a.id } });
+              return (
+                <Press key={a.key} onPress={open} accessibilityRole="button" dip={0.98} style={[styles.an, { backgroundColor: t.card }, shadow(t)]}>
+                  <View style={[styles.pic, { backgroundColor: t.icBg }]}>
+                    <Icon name={look.icon} size={18} color={look.color} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Txt size={14.5} weight={600} color={t.ink}>
+                      {a.title}
+                    </Txt>
+                    <Txt size={12} color={t.muted}>
+                      {a.sub}
+                    </Txt>
+                    <Txt size={13.5} color={t.ink} style={{ marginTop: 6 }}>
+                      {a.text}
+                    </Txt>
+                  </View>
+                </Press>
+              );
+            })}
+          </View>
+        )}
+      </LayoutAnimationConfig>
     </Screen>
   );
 }
@@ -191,12 +196,12 @@ export default function NotesScreen() {
 function Action({ label, icon, onPress }: { label: string; icon: IconName; onPress: () => void }) {
   const t = useTheme();
   return (
-    <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.action, { backgroundColor: t.fieldBg, opacity: pressed ? 0.75 : 1 }]}>
+    <Press accessibilityRole="button" onPress={onPress} dip={0.95} style={[styles.action, { backgroundColor: t.fieldBg }]}>
       <Icon name={icon} size={16} color={t.ink} />
       <Txt size={13.5} weight={600} color={t.ink}>
         {label}
       </Txt>
-    </Pressable>
+    </Press>
   );
 }
 
@@ -208,8 +213,6 @@ const styles = StyleSheet.create({
   note: { borderRadius: 18, paddingVertical: 12, paddingHorizontal: 14, gap: 4 },
   actions: { flexDirection: 'row', gap: 8, marginTop: 6 },
   action: { flex: 1, minHeight: 44, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
-  moved: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 2, borderStyle: 'dashed', borderRadius: 18, paddingVertical: 6, paddingLeft: 12, paddingRight: 6 },
-  undo: { minHeight: 44, paddingHorizontal: 10, justifyContent: 'center' },
   an: { flexDirection: 'row', gap: 10, borderRadius: 16, paddingTop: 10, paddingRight: 12, paddingBottom: 12, paddingLeft: 10 },
   pic: { width: 36, height: 36, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
 });

@@ -17,6 +17,13 @@ export async function syncFromPhone(store: Store, now: Date): Promise<void> {
   await read(store, now);
 }
 
+/** "Sync iPhone calendar now" in Settings: re-read right away and say whether it could. Never prompts. */
+export async function syncNow(store: Store, now: Date): Promise<'synced' | 'denied'> {
+  if ((await permission(false)) !== 'granted') return 'denied';
+  await read(store, now);
+  return 'synced';
+}
+
 /** The Import button on the iPhone calendar screen. Asks for access the first time. */
 export async function importFromPhone(store: Store, now: Date): Promise<'granted' | 'denied'> {
   if ((await permission(true)) !== 'granted') return 'denied';

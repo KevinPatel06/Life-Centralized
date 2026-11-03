@@ -1,7 +1,7 @@
 // iPhone calendar (spec §4): import, then keep or hide whole calendars and single events.
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { importFromPhone } from '../data/calendarSync';
@@ -9,6 +9,7 @@ import { useAppState, useStore } from '../data/StoreContext';
 import { calendarGroups, setCalendarKept, setEventKept } from '../domain/calendar';
 import { Icon } from '../ui/Icon';
 import { BackLink, PrimaryButton, Switch } from '../ui/kit';
+import { Press } from '../ui/Press';
 import { useTheme } from '../ui/ThemeContext';
 import { Txt } from '../ui/Txt';
 
@@ -70,7 +71,7 @@ export default function CalendarScreen() {
               <Switch value={g.on} label={`Keep ${g.title}`} onChange={(on) => store.update((st) => setCalendarKept(st, g.id, on))} />
             </View>
             {(expanded[g.id] ? g.events : g.events.slice(0, PREVIEW)).map((e) => (
-              <Pressable
+              <Press
                 key={e.key}
                 accessibilityRole="checkbox"
                 accessibilityState={{ checked: e.kept, disabled: !g.on }}
@@ -89,10 +90,10 @@ export default function CalendarScreen() {
                     {e.when}
                   </Txt>
                 </View>
-              </Pressable>
+              </Press>
             ))}
             {g.events.length > PREVIEW ? (
-              <Pressable
+              <Press
                 accessibilityRole="button"
                 accessibilityState={{ expanded: !!expanded[g.id] }}
                 onPress={() => setExpanded((x) => ({ ...x, [g.id]: !x[g.id] }))}
@@ -101,7 +102,7 @@ export default function CalendarScreen() {
                 <Txt size={14} weight={600} color={t.accent}>
                   {expanded[g.id] ? 'Show fewer' : `Show all ${g.total}`}
                 </Txt>
-              </Pressable>
+              </Press>
             ) : null}
             {g.events.length === 0 ? (
               <Txt size={13} color={t.onBgMuted}>

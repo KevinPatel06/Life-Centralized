@@ -2,7 +2,7 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 
 import { useAppState, useStore } from '../data/StoreContext';
 import {
@@ -21,6 +21,7 @@ import { toISODate } from '../lib/dates';
 import { BLOCK_NAME, clock } from '../lib/format';
 import { Icon } from '../ui/Icon';
 import { BackLink, Card, Field, Label, PillButton, Screen } from '../ui/kit';
+import { Press } from '../ui/Press';
 import { useTheme } from '../ui/ThemeContext';
 import { Txt } from '../ui/Txt';
 
@@ -119,7 +120,7 @@ export default function RoutineScreen() {
             ) : null}
           </View>
         ))}
-        <Pressable
+        <Press
           accessibilityRole="button"
           onPress={() =>
             Alert.alert('Use these times every day?', `Every day gets ${DAYS[weekday]}'s block times and labels. Items stay where they are.`, [
@@ -132,7 +133,7 @@ export default function RoutineScreen() {
           <Txt size={14} weight={600} color={t.accent}>
             Use these times every day
           </Txt>
-        </Pressable>
+        </Press>
       </Card>
 
       {day.blocks.map((b) => (
@@ -189,7 +190,7 @@ function ItemsCard({ weekday, block, items, edit }: { weekday: number; block: Bl
     <Card>
       <Label>{BLOCK_NAME[block]}</Label>
       {items.map((item) => (
-        <Pressable
+        <Press
           key={item.id}
           accessibilityRole="button"
           accessibilityHint="Edit this item"
@@ -207,13 +208,13 @@ function ItemsCard({ weekday, block, items, edit }: { weekday: number; block: Bl
             ) : null}
           </View>
           <Icon name="right" size={18} color={t.muted} />
-        </Pressable>
+        </Press>
       ))}
       <View style={styles.addRow}>
         <Field value={title} onChangeText={setTitle} onSubmitEditing={add} returnKeyType="done" placeholder={`Add to ${BLOCK_NAME[block]}`} style={{ flex: 1 }} accessibilityLabel={`New item for ${BLOCK_NAME[block]}`} />
-        <Pressable accessibilityRole="button" accessibilityLabel={`Add to ${BLOCK_NAME[block]}`} onPress={add} style={[styles.addBtn, { backgroundColor: t.fabBg }]}>
+        <Press accessibilityRole="button" accessibilityLabel={`Add to ${BLOCK_NAME[block]}`} onPress={add} style={[styles.addBtn, { backgroundColor: t.fabBg }]}>
           <Icon name="plus" size={20} color={t.fabInk} strokeWidth={2.6} />
-        </Pressable>
+        </Press>
       </View>
     </Card>
   );
@@ -249,11 +250,11 @@ function StandingPlans({
               {p.when.kind === 'block' ? BLOCK_NAME[p.when.block] : ''}
             </Txt>
           </View>
-          <Pressable accessibilityRole="button" accessibilityLabel={`Remove ${p.title}`} onPress={() => edit((st) => removeStandingPlan(st, weekday, p.id))} hitSlop={8} style={styles.remove}>
+          <Press accessibilityRole="button" accessibilityLabel={`Remove ${p.title}`} onPress={() => edit((st) => removeStandingPlan(st, weekday, p.id))} hitSlop={8} style={styles.remove}>
             <View style={{ transform: [{ rotate: '45deg' }] }}>
               <Icon name="plus" size={18} color={t.muted} />
             </View>
-          </Pressable>
+          </Press>
         </View>
       ))}
       <Field value={title} onChangeText={setTitle} placeholder="Add a standing plan" accessibilityLabel="New standing plan" />

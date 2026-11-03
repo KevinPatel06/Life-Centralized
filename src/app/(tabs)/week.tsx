@@ -1,13 +1,17 @@
-import { router } from 'expo-router';
+import { Link, router } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, type ScrollViewInstance, StyleSheet, View } from 'react-native';
+import { ScrollView, type ScrollViewInstance, StyleSheet, View } from 'react-native';
+import Animated, { FadeIn, FadeInLeft, FadeInRight } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAppState, useStore } from '../../data/StoreContext';
 import { toggleEntry } from '../../domain/ticks';
-import { MAX_WEEK_OFFSET, buildWeek } from '../../domain/week';
+import { MAX_WEEK_OFFSET, type WeekCard, buildWeek } from '../../domain/week';
+import { haptic } from '../../ui/haptics';
 import { Icon } from '../../ui/Icon';
 import { TAB_BAR_SPACE, shadow } from '../../ui/kit';
+import { confirmDeletePlan } from '../../ui/planActions';
+import { Press } from '../../ui/Press';
 import { useTheme } from '../../ui/ThemeContext';
 import { Txt } from '../../ui/Txt';
 import { useNow } from '../../ui/useNow';
@@ -20,14 +24,19 @@ export default function WeekScreen() {
   const now = useNow();
   const insets = useSafeAreaInsets();
   const [offset, setOffset] = useState(0);
+  // Which way the last week change went, so the new week slides in from that side. 0 = first open, no slide.
+  const [dir, setDir] = useState<-1 | 0 | 1>(0);
   const v = useMemo(() => buildWeek(s, now, offset), [s, now, offset]);
   const scroll = useRef<ScrollViewInstance>(null);
   const dayY = useRef<Record<string, number>>({});
 
   const go = (next: number) => {
+    haptic.select();
+    setDir(next > offset ? 1 : -1);
     setOffset(next);
     scroll.current?.scrollTo({ y: 0, animated: false });
   };
+  const slideIn = dir === 0 ? undefined : (dir > 0 ? FadeInRight : FadeInLeft).duration(240);
 
   return (
     <ScrollView
@@ -41,23 +50,27 @@ export default function WeekScreen() {
       >
         <View style={styles.nav}>
           <NavButton icon="left" label="Previous week" disabled={v.offset === 0} onPress={() => go(v.offset - 1)} />
-          <View style={{ flex: 1, alignItems: 'center' }}>
+          <Animated.View key={v.offset} entering={dir === 0 ? undefined : FadeIn.duration(200)} style={{ flex: 1, alignItems: 'center' }}>
             <Txt kind="display" weight={700} size={28} accessibilityRole="header">
               {v.title}
             </Txt>
             <Txt size={14} color={t.onBgMuted} style={{ marginTop: 3 }}>
               {v.range}
             </Txt>
-          </View>
+          </Animated.View>
           <NavButton icon="right" label="Next week" disabled={v.offset === MAX_WEEK_OFFSET} onPress={() => go(v.offset + 1)} />
         </View>
         <View style={styles.strip}>
           {v.days.map((d) => (
-            <Pressable
+            <Press
               key={d.date}
               accessibilityRole="button"
               accessibilityLabel={`${d.name} ${d.dateLabel}${d.hasPlans ? ', has plans' : ''}`}
-              onPress={() => scroll.current?.scrollTo({ y: (dayY.current[d.date] ?? 0) + 4, animated: true })}
+              onPress={() => {
+                haptic.select();
+                scroll.current?.scrollTo({ y: (dayY.current[d.date] ?? 0) + 4, animated: true });
+              }}
+              dip={0.9}
               style={styles.stripDay}
             >
               <Txt size={11} weight={600} color={t.onBgMuted}>
@@ -69,12 +82,12 @@ export default function WeekScreen() {
                 </Txt>
               </View>
               <View style={[styles.pd, { backgroundColor: d.hasPlans ? t.accent : 'transparent' }]} />
-            </Pressable>
+            </Press>
           ))}
         </View>
       </View>
 
-      <View style={styles.body}>
+      <Animated.View key={v.offset} entering={slideIn} style={styles.body}>
         <GoalPills goals={v.goals} />
         {v.days.map((d, i) => (
           <View
@@ -92,28 +105,30 @@ export default function WeekScreen() {
               {d.isToday ? <SmallTag label="Today" today /> : null}
               {d.label ? <SmallTag label={d.label} /> : null}
               {d.checkin.state !== 'none' ? (
-                <Pressable
+                <Press
                   accessibilityRole="button"
                   accessibilityLabel={d.checkin.state === 'pending' ? `Check in ${d.name}` : `${d.checkin.summary}. Change`}
                   onPress={() => router.push({ pathname: '/checkin/[date]', params: { date: d.date } })}
                   hitSlop={12}
+                  dip={0.92}
                   style={[styles.ci, { backgroundColor: d.checkin.state === 'pending' ? t.nowChip : t.pillBg }]}
                 >
                   <Txt size={11.5} weight={600} color={d.checkin.state === 'pending' ? t.nowChipInk : t.pillMuted}>
                     {d.checkin.state === 'pending' ? 'Check in' : d.checkin.summary.replace('Checked in · ', '✓ ')}
                   </Txt>
-                </Pressable>
+                </Press>
               ) : null}
-              <Pressable
+              <Press
                 accessibilityRole="button"
                 accessibilityLabel={`Add a plan on ${d.name}`}
                 onPress={() => router.push({ pathname: '/plan', params: { date: d.date } })}
+                dip={0.88}
                 style={styles.addBtn}
               >
                 <View style={[styles.addCircle, { backgroundColor: t.pillBg }, shadow(t)]}>
                   <Icon name="plus" size={18} color={t.pillInk} />
                 </View>
-              </Pressable>
+              </Press>
             </View>
             {d.note || d.backupTags.length ? (
               <View style={styles.info}>
@@ -131,19 +146,7 @@ export default function WeekScreen() {
                 ))}
               </View>
             ) : null}
-            {d.cards.map((c) => (
-              <PlanCard
-                key={c.key}
-                card={c}
-                onPress={
-                  c.planId
-                    ? () => router.push({ pathname: '/plan', params: { id: c.planId! } })
-                    : c.eventKey
-                      ? () => router.push({ pathname: '/event/[key]', params: { key: c.eventKey! } })
-                      : undefined
-                }
-              />
-            ))}
+            {d.cards.map((c) => (c.planId ? <PlanWithMenu key={c.key} card={c} planId={c.planId} /> : <OtherCard key={c.key} card={c} />))}
             {d.rows.map((r) => (
               <RoutineTick key={r.key} row={r} onPress={() => store.update((st) => toggleEntry(st, d.date, r.key, new Date()))} />
             ))}
@@ -154,24 +157,48 @@ export default function WeekScreen() {
             ) : null}
           </View>
         ))}
-      </View>
+      </Animated.View>
     </ScrollView>
   );
+}
+
+/** One of your plans: tap opens it, hold lifts it with Edit and Delete. */
+function PlanWithMenu({ card, planId }: { card: WeekCard; planId: string }) {
+  const store = useStore();
+  const href = { pathname: '/plan', params: { id: planId } } as const;
+  return (
+    <Link href={href} asChild>
+      <Link.Trigger>
+        <PlanCard card={card} />
+      </Link.Trigger>
+      <Link.Menu>
+        <Link.MenuAction title="Edit" icon="pencil" onPress={() => router.push(href)} />
+        <Link.MenuAction title="Delete" icon="trash" destructive onPress={() => confirmDeletePlan(store, planId)} />
+      </Link.Menu>
+    </Link>
+  );
+}
+
+/** iPhone events open their notes sheet; birthdays and routine plans just show. */
+function OtherCard({ card }: { card: WeekCard }) {
+  const key = card.eventKey;
+  return <PlanCard card={card} onPress={key ? () => router.push({ pathname: '/event/[key]', params: { key } }) : undefined} />;
 }
 
 function NavButton({ icon, label, disabled, onPress }: { icon: 'left' | 'right'; label: string; disabled: boolean; onPress: () => void }) {
   const t = useTheme();
   return (
-    <Pressable
+    <Press
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}
+      dip={0.88}
       style={[styles.navBtn, { backgroundColor: t.pillBg, opacity: disabled ? 0.35 : 1 }, shadow(t)]}
     >
       <Icon name={icon} size={20} color={t.pillInk} />
-    </Pressable>
+    </Press>
   );
 }
 

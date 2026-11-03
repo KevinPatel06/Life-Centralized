@@ -1,4 +1,4 @@
-import { addTask, buildPriorities, deleteTask, effectiveUrgency, plannedLabel, toggleTaskDone, updateTask } from './tasks';
+import { addTask, buildPriorities, deleteTask, effectiveUrgency, plannedLabel, restoreTask, toggleTaskDone, updateTask } from './tasks';
 import { emptyState } from './template';
 import type { Task } from './types';
 
@@ -44,6 +44,12 @@ describe('editing tasks', () => {
     expect(toggleTaskDone(state, id, now).tasks[id].doneAt).toBe(now.toISOString());
     expect(toggleTaskDone(toggleTaskDone(state, id, now), id, now).tasks[id].doneAt).toBeUndefined();
     expect(deleteTask(state, id).tasks[id]).toBeUndefined();
+  });
+
+  test('a deleted task can be put back exactly as it was', () => {
+    const { state, id } = addTask(emptyState(), { title: 'Task A', note: 'Note A' }, now);
+    const before = state.tasks[id];
+    expect(restoreTask(deleteTask(state, id), before).tasks[id]).toEqual(before);
   });
 });
 

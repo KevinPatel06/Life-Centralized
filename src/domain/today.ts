@@ -8,7 +8,15 @@ import { effectiveUrgency } from './tasks';
 import { blockAt } from './template';
 import type { AppState, BlockId, ISODate, PlanKind } from './types';
 
-export interface TodayRow { key: string; title: string; subtitle?: string; done: boolean; chip: 'routine' | 'now' | 'soon' | 'someday' }
+export interface TodayRow {
+  key: string;
+  title: string;
+  subtitle?: string;
+  done: boolean;
+  chip: 'routine' | 'now' | 'soon' | 'someday';
+  /** Set on task rows, so tapping the row can open the task. */
+  taskId?: string;
+}
 export interface TodayLine { key: string; time: string; title: string; source: 'plan' | 'iphone'; kind: PlanKind | 'event'; planId?: string }
 export interface TodayBlock {
   id: BlockId;
@@ -40,7 +48,14 @@ const join = (parts: (string | undefined | null | false)[]) => parts.filter(Bool
 function toRow(e: TickEntry, date: ISODate, today: ISODate): TodayRow {
   if (e.type === 'task') {
     const note = firstLine(e.task.note);
-    return { key: e.key, title: e.task.title, ...(note ? { subtitle: note } : {}), done: e.done, chip: effectiveUrgency(e.task, today).urgency };
+    return {
+      key: e.key,
+      title: e.task.title,
+      ...(note ? { subtitle: note } : {}),
+      done: e.done,
+      chip: effectiveUrgency(e.task, today).urgency,
+      taskId: e.task.id,
+    };
   }
   const item = e.item;
   const subtitle =

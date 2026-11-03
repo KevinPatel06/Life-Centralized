@@ -13,6 +13,7 @@ import { StoreProvider } from '../data/StoreContext';
 import { toISODate } from '../lib/dates';
 import { FONT_ASSETS } from '../ui/fonts';
 import { useTheme } from '../ui/ThemeContext';
+import { UndoProvider } from '../ui/Undo';
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts(FONT_ASSETS);
@@ -86,7 +87,7 @@ function AppStack() {
     contentStyle: { backgroundColor: t.card },
   };
   return (
-    <>
+    <UndoProvider>
       <StatusBar style={t.dark ? 'light' : 'dark'} />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: t.bg } }}>
         <Stack.Screen name="(tabs)" />
@@ -100,6 +101,6 @@ function AppStack() {
         <Stack.Screen name="routine" />
         <Stack.Screen name="routine-item" options={{ ...sheet, sheetAllowedDetents: [1] }} />
       </Stack>
-    </>
+    </UndoProvider>
   );
 }

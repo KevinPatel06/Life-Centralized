@@ -20,6 +20,11 @@ export function deleteNote(s: AppState, id: string): AppState {
   return { ...s, notes };
 }
 
+/** Undo a delete: put the note back exactly as it was. */
+export function restoreNote(s: AppState, note: Note): AppState {
+  return { ...s, notes: { ...s.notes, [note.id]: note } };
+}
+
 /** First non-empty line is the title; the rest is the note. */
 function splitNote(text: string): { title: string; note: string } {
   const lines = text.split('\n');

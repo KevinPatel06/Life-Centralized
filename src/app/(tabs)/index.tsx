@@ -1,14 +1,17 @@
 import { router } from 'expo-router';
 import { useMemo } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import Animated, { FadeIn, LayoutAnimationConfig, LinearTransition } from 'react-native-reanimated';
 
 import { useAppState, useStore } from '../../data/StoreContext';
 import { canTick, toggleEntry } from '../../domain/ticks';
 import { buildToday } from '../../domain/today';
 import { plural } from '../../lib/format';
 import { DoneBlock, LaterBlock, NowBlock, BuddySays } from '../../ui/blocks';
+import { haptic } from '../../ui/haptics';
 import { Icon } from '../../ui/Icon';
 import { Screen, shadow } from '../../ui/kit';
+import { Press } from '../../ui/Press';
 import { useTheme } from '../../ui/ThemeContext';
 import { Txt } from '../../ui/Txt';
 import { useNow } from '../../ui/useNow';
@@ -21,6 +24,16 @@ export default function TodayScreen() {
   const v = useMemo(() => buildToday(s, now), [s, now]);
   const tickable = canTick(s, v.date, v.date);
 
+  /** A light tap per tick; a success buzz when it finishes the current block. */
+  function tick(key: string) {
+    const block = v.blocks.find((b) => b.state === 'now');
+    const row = block?.rows.find((r) => r.key === key);
+    const finishes = !!block && !!row && !row.done && block.rows.every((r) => r.key === key || r.done);
+    if (finishes) haptic.success();
+    else haptic.tap();
+    store.update((st) => toggleEntry(st, v.date, key, new Date()));
+  }
+
   return (
     <Screen>
       <View>
@@ -28,9 +41,9 @@ export default function TodayScreen() {
           <Txt kind="display" weight={700} size={44} style={{ flex: 1 }} accessibilityRole="header">
             {v.weekday}
           </Txt>
-          <Pressable accessibilityRole="button" accessibilityLabel="Settings" onPress={() => router.push('/settings')} hitSlop={8} style={styles.gear}>
+          <Press accessibilityRole="button" accessibilityLabel="Settings" onPress={() => router.push('/settings')} hitSlop={8} dip={0.88} style={styles.gear}>
             <Icon name="gear" size={24} color={t.onBgMuted} />
-          </Pressable>
+          </Press>
         </View>
         <View style={styles.sub}>
           <Txt size={15} color={t.onBgMuted}>
@@ -54,48 +67,55 @@ export default function TodayScreen() {
         </View>
       ) : null}
 
-      <View style={{ gap: 10 }}>
-        {v.blocks.map((b) =>
-          b.state === 'done' ? (
-            <DoneBlock key={b.id} block={b} />
-          ) : b.state === 'now' ? (
-            <NowBlock
-              key={b.id}
-              block={b}
-              canTick={tickable}
-              onTick={(key) => store.update((st) => toggleEntry(st, v.date, key, new Date()))}
-              onLine={(line) => line.planId && router.push({ pathname: '/plan', params: { id: line.planId } })}
-            />
-          ) : (
-            <LaterBlock key={b.id} block={b} />
-          ),
-        )}
-      </View>
+      <LayoutAnimationConfig skipEntering>
+        <View style={{ gap: 10 }}>
+          {v.blocks.map((b) => (
+            // Keyed by block and state, so a block that changes state fades into its new look.
+            <Animated.View key={`${b.id}:${b.state}`} entering={FadeIn.duration(260)} layout={LinearTransition.duration(240)}>
+              {b.state === 'done' ? (
+                <DoneBlock block={b} />
+              ) : b.state === 'now' ? (
+                <NowBlock
+                  block={b}
+                  canTick={tickable}
+                  onTick={tick}
+                  onLine={(line) => line.planId && router.push({ pathname: '/plan', params: { id: line.planId } })}
+                  onOpenTask={(id) => router.push({ pathname: '/task/[id]', params: { id } })}
+                />
+              ) : (
+                <LaterBlock block={b} />
+              )}
+            </Animated.View>
+          ))}
+        </View>
+      </LayoutAnimationConfig>
 
       {v.checkin.state === 'pending' ? (
-        <Pressable
+        <Press
           accessibilityRole="button"
           onPress={() => router.push({ pathname: '/checkin/[date]', params: { date: v.date } })}
-          style={({ pressed }) => [styles.endDay, { borderColor: t.bgLine, opacity: pressed ? 0.7 : 1 }]}
+          dip={0.98}
+          style={[styles.endDay, { borderColor: t.bgLine }]}
         >
           <Icon name="moon" size={18} color={t.onBg} />
           <Txt size={15} weight={600}>
             End my day
           </Txt>
-        </Pressable>
+        </Press>
       ) : null}
       {v.checkin.state === 'done' ? (
-        <Pressable
+        <Press
           accessibilityRole="button"
           accessibilityHint="Opens your check-in to change it"
           onPress={() => router.push({ pathname: '/checkin/[date]', params: { date: v.date } })}
+          dip={0.98}
           style={styles.checkedIn}
         >
           <Icon name="check" size={18} color={t.doneCheck} strokeWidth={3} />
           <Txt size={14} color={t.onBgMuted}>
             {v.checkin.summary.replace('Checked in', 'Day checked in')}
           </Txt>
-        </Pressable>
+        </Press>
       ) : null}
 
       {v.tomorrow ? (

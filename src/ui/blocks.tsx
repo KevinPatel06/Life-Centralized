@@ -1,11 +1,12 @@
 // Today's block pieces, after the mockup: finished blocks dashed, the current block open, later blocks compact.
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import type { TodayBlock, TodayLine, TodayRow } from '../domain/today';
 import type { BlockId } from '../domain/types';
 import { Buddy } from './Buddy';
 import { Icon, type IconName } from './Icon';
 import { Chip, Tick, shadow } from './kit';
+import { Press } from './Press';
 import { BLOCK_COLOR, type Theme } from './theme';
 import { useTheme } from './ThemeContext';
 import { Txt } from './Txt';
@@ -38,11 +39,14 @@ export function NowBlock({
   canTick,
   onTick,
   onLine,
+  onOpenTask,
 }: {
   block: TodayBlock;
   canTick: boolean;
+  /** Ticks give no haptic of their own here: the caller picks a tap or, for the block's last item, a success. */
   onTick: (key: string) => void;
   onLine: (line: TodayLine) => void;
+  onOpenTask: (taskId: string) => void;
 }) {
   const t = useTheme();
   return (
@@ -64,16 +68,17 @@ export function NowBlock({
       {block.rows.length > 0 ? (
         <View style={[styles.tasks, { backgroundColor: t.taskBg }]}>
           {block.rows.map((row) => (
-            <RowLine key={row.key} row={row} canTick={canTick} onTick={onTick} />
+            <RowLine key={row.key} row={row} canTick={canTick} onTick={onTick} onOpenTask={onOpenTask} />
           ))}
         </View>
       ) : null}
       {block.lines.map((line) => (
-        <Pressable
+        <Press
           key={line.key}
           disabled={!line.planId}
           onPress={() => onLine(line)}
           accessibilityRole={line.planId ? 'button' : 'text'}
+          dip={0.98}
           style={styles.event}
         >
           <Txt size={13.5} weight={600} color={t.ink}>
@@ -87,13 +92,23 @@ export function NowBlock({
               iPhone calendar
             </Txt>
           ) : null}
-        </Pressable>
+        </Press>
       ))}
     </View>
   );
 }
 
-function RowLine({ row, canTick, onTick }: { row: TodayRow; canTick: boolean; onTick: (key: string) => void }) {
+function RowLine({
+  row,
+  canTick,
+  onTick,
+  onOpenTask,
+}: {
+  row: TodayRow;
+  canTick: boolean;
+  onTick: (key: string) => void;
+  onOpenTask: (taskId: string) => void;
+}) {
   const t = useTheme();
   const chip =
     row.chip === 'now'
@@ -103,8 +118,15 @@ function RowLine({ row, canTick, onTick }: { row: TodayRow; canTick: boolean; on
         : { label: row.chip === 'soon' ? 'Soon' : 'Someday', bg: t.chipSomeBg, ink: t.chipSomeInk };
   return (
     <View style={styles.row}>
-      <Tick checked={row.done} onPress={() => onTick(row.key)} label={`Mark done: ${row.title}`} disabled={!canTick} />
-      <View style={{ flex: 1 }}>
+      <Tick checked={row.done} onPress={() => onTick(row.key)} label={`Mark done: ${row.title}`} disabled={!canTick} haptics={false} />
+      <Press
+        disabled={!row.taskId}
+        onPress={() => row.taskId && onOpenTask(row.taskId)}
+        accessibilityRole={row.taskId ? 'button' : 'text'}
+        accessibilityHint={row.taskId ? 'Opens the task' : undefined}
+        dip={0.98}
+        style={styles.rowBody}
+      >
         <Txt
           size={15}
           weight={600}
@@ -118,7 +140,7 @@ function RowLine({ row, canTick, onTick }: { row: TodayRow; canTick: boolean; on
             {row.subtitle}
           </Txt>
         ) : null}
-      </View>
+      </Press>
       <Chip label={chip.label} bg={chip.bg} color={chip.ink} />
     </View>
   );
@@ -175,6 +197,7 @@ const styles = StyleSheet.create({
   icon: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   tasks: { borderRadius: 18, paddingVertical: 4, paddingLeft: 4, paddingRight: 10 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 5 },
+  rowBody: { flex: 1, minHeight: 44, justifyContent: 'center' },
   event: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 4, minHeight: 32 },
   later: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 22, paddingVertical: 12, paddingHorizontal: 14 },
   buddy: { flexDirection: 'row', alignItems: 'flex-end', gap: 10 },

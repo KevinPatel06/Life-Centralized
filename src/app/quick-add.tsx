@@ -1,12 +1,14 @@
 // Quick add (spec §3.8): one field, saved as a Note (default), a Task (Soon) or a Plan.
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useStore } from '../data/StoreContext';
 import { quickAdd } from '../domain/notes';
+import { haptic } from '../ui/haptics';
 import { Field, PrimaryButton } from '../ui/kit';
+import { Press } from '../ui/Press';
 import { useTheme } from '../ui/ThemeContext';
 import { Txt } from '../ui/Txt';
 
@@ -19,6 +21,7 @@ export default function QuickAdd() {
 
   function save(as: 'note' | 'task') {
     if (blank) return;
+    haptic.tap();
     store.update((st) => quickAdd(st, text, as, new Date()).state);
     router.back();
   }
@@ -53,17 +56,17 @@ export default function QuickAdd() {
 function Secondary({ label, disabled, onPress }: { label: string; disabled: boolean; onPress: () => void }) {
   const t = useTheme();
   return (
-    <Pressable
+    <Press
       accessibilityRole="button"
       accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [styles.secondary, { backgroundColor: t.fieldBg, opacity: disabled ? 0.4 : pressed ? 0.75 : 1 }]}
+      style={[styles.secondary, { backgroundColor: t.fieldBg, opacity: disabled ? 0.4 : 1 }]}
     >
       <Txt size={15} weight={600} color={t.ink}>
         {label}
       </Txt>
-    </Pressable>
+    </Press>
   );
 }
 

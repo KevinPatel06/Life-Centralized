@@ -6,6 +6,7 @@ import {
   noteToTask,
   noteWhen,
   quickAdd,
+  restoreNote,
   setEventNote,
   undoNoteToTask,
 } from './notes';
@@ -24,6 +25,8 @@ test('blank notes are not saved; others land in the inbox, newest first', () => 
   expect(b.state.notes[b.id].text).toBe('Note B');
   expect(inboxNotes(b.state).map((n) => n.text)).toEqual(['Note B', 'Note A']);
   expect(inboxNotes(deleteNote(b.state, a.id)).map((n) => n.text)).toEqual(['Note B']);
+  const gone = b.state.notes[a.id];
+  expect(inboxNotes(restoreNote(deleteNote(b.state, a.id), gone)).map((n) => n.text)).toEqual(['Note B', 'Note A']);
 });
 
 test('making a note a task: first line is the title, the rest the note, in Soon', () => {

@@ -1,9 +1,12 @@
 // Week page pieces, after the mockup: goal pills, plan cards and the small routine ticks.
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 import type { WeekCard, WeekRow, WeekView } from '../domain/week';
+import { haptic } from './haptics';
 import { Icon, type IconName } from './Icon';
-import { shadow } from './kit';
+import { shadow, usePop } from './kit';
+import { Press } from './Press';
 import { PLAN_COLOR, type Theme } from './theme';
 import { useTheme } from './ThemeContext';
 import { Txt } from './Txt';
@@ -36,15 +39,18 @@ export function GoalPills({ goals }: { goals: WeekView['goals'] }) {
   );
 }
 
-export function PlanCard({ card, onPress }: { card: WeekCard; onPress?: () => void }) {
+/** A plan, event or birthday on Week. Inside a Link, the Link passes its own `onPress` through `link`. */
+export function PlanCard({ card, ...link }: { card: WeekCard; onPress?: () => void }) {
   const t = useTheme();
   const look = cardLook(card.kind, t);
+  const tappable = !!link.onPress;
   return (
-    <Pressable
-      disabled={!onPress}
-      onPress={onPress}
-      accessibilityRole={onPress ? 'button' : 'text'}
-      style={({ pressed }) => [styles.plan, { backgroundColor: t.card, opacity: pressed ? 0.8 : 1 }, shadow(t)]}
+    <Press
+      {...link}
+      disabled={!tappable}
+      accessibilityRole={tappable ? 'button' : 'text'}
+      dip={0.98}
+      style={[styles.plan, { backgroundColor: t.card }, shadow(t)]}
     >
       <View style={[styles.pic, { backgroundColor: t.icBg }]}>
         <Icon name={look.icon} size={18} color={look.color} />
@@ -65,25 +71,30 @@ export function PlanCard({ card, onPress }: { card: WeekCard; onPress?: () => vo
           </Txt>
         </View>
       ) : null}
-    </Pressable>
+    </Press>
   );
 }
 
 export function RoutineTick({ row, onPress }: { row: WeekRow; onPress: () => void }) {
   const t = useTheme();
   const mark = t.dark ? '#1C2620' : '#FFFFFF';
+  const pop = usePop(row.done);
   return (
-    <Pressable
+    <Press
       accessibilityRole="checkbox"
       accessibilityState={{ checked: row.done, disabled: !row.tickable }}
       accessibilityLabel={row.title}
       disabled={!row.tickable}
-      onPress={onPress}
+      onPress={() => {
+        haptic.tap();
+        onPress();
+      }}
+      dip={0.98}
       style={styles.td}
     >
-      <View style={[styles.mk, { borderColor: row.done ? t.doneCheck : t.onBgMuted, backgroundColor: row.done ? t.doneCheck : 'transparent' }]}>
+      <Animated.View style={[styles.mk, { borderColor: row.done ? t.doneCheck : t.onBgMuted, backgroundColor: row.done ? t.doneCheck : 'transparent' }, pop]}>
         {row.done ? <Icon name="check" size={12} color={mark} strokeWidth={3.5} /> : null}
-      </View>
+      </Animated.View>
       <View style={{ flex: 1 }}>
         <Txt size={14} color={row.done ? t.onBgMuted : t.onBg} style={row.done ? { textDecorationLine: 'line-through' } : undefined}>
           {row.title}
@@ -94,7 +105,7 @@ export function RoutineTick({ row, onPress }: { row: WeekRow; onPress: () => voi
           </Txt>
         ) : null}
       </View>
-    </Pressable>
+    </Press>
   );
 }
 

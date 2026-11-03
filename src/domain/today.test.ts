@@ -31,7 +31,7 @@ test('Monday evening: two blocks to go, the evening block open', () => {
   expect(evening.range).toBe('6:00–9:00');
   expect(evening.rows).toEqual([
     { key: 'e', title: 'Item E', subtitle: 'Backup is Thursday', done: false, chip: 'routine' },
-    { key: 'task:t1', title: 'Task t1', subtitle: 'First line', done: false, chip: 'now' },
+    { key: 'task:t1', title: 'Task t1', subtitle: 'First line', done: false, chip: 'now', taskId: 't1' },
   ]);
   expect(evening.lines).toEqual([{ key: 'event:ev1', time: '7:45 PM', title: 'Event 1', source: 'iphone', kind: 'event' }]);
   expect(v.blocks[3]).toMatchObject({ name: 'Wind down', summary: 'Bed by 11:00', state: 'later' });

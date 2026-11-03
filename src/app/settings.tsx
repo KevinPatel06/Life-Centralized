@@ -1,16 +1,19 @@
 import { router } from 'expo-router';
 import { type ReactNode, useState } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 
 import { shareBackup, pickBackup } from '../data/backupFiles';
+import { syncNow } from '../data/calendarSync';
 import { useAppState, useStore } from '../data/StoreContext';
 import { calendarGroups } from '../domain/calendar';
 import { startOfDay } from '../domain/lifecycle';
 import { restoreFlow, setBackground, setCards, setCharcoalInDark, setGoalTarget } from '../domain/settings';
 import type { GoalId } from '../domain/types';
 import { toISODate } from '../lib/dates';
+import { haptic } from '../ui/haptics';
 import { Icon } from '../ui/Icon';
 import { BackLink, Card, Screen, Switch, shadow } from '../ui/kit';
+import { Press } from '../ui/Press';
 import { BACKGROUNDS, CARDS, resolveTheme } from '../ui/theme';
 import { useTheme } from '../ui/ThemeContext';
 import { Txt } from '../ui/Txt';
@@ -23,12 +26,35 @@ const GOALS: { id: GoalId; name: string }[] = [
 
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
+type SyncState = 'idle' | 'syncing' | 'synced' | 'denied' | 'failed';
+const SYNC_DETAIL: Record<SyncState, string> = {
+  idle: 'Pull in new iPhone events',
+  syncing: 'Syncing…',
+  synced: 'Synced just now',
+  denied: 'No calendar access',
+  failed: "Couldn't sync",
+};
+
 export default function Settings() {
   const t = useTheme();
   const s = useAppState();
   const store = useStore();
   const [goalsOpen, setGoalsOpen] = useState(false);
+  const [sync, setSync] = useState<SyncState>('idle');
   const cardHex = resolveTheme(s.settings, 'light').card;
+
+  async function syncCalendar() {
+    if (sync === 'syncing') return;
+    setSync('syncing');
+    try {
+      const result = await syncNow(store, new Date());
+      setSync(result);
+      if (result === 'synced') haptic.success();
+    } catch (e) {
+      console.warn('Calendar sync failed', e);
+      setSync('failed');
+    }
+  }
 
   async function backUp() {
     try {
@@ -85,12 +111,15 @@ export default function Settings() {
           {BACKGROUNDS.map((b) => {
             const on = s.settings.background === b.id;
             return (
-              <Pressable
+              <Press
                 key={b.id}
                 accessibilityRole="button"
                 accessibilityState={{ selected: on }}
                 accessibilityLabel={`${b.name} background`}
-                onPress={() => store.update((st) => setBackground(st, b.id))}
+                onPress={() => {
+                  haptic.select();
+                  store.update((st) => setBackground(st, b.id));
+                }}
                 style={[styles.swatch, { backgroundColor: t.fieldBg, borderColor: on ? t.accent : 'transparent' }]}
               >
                 <View style={[styles.preview, { backgroundColor: b.swatch }]}>
@@ -100,7 +129,7 @@ export default function Settings() {
                 <Txt size={12.5} weight={600} color={t.ink}>
                   {b.name}
                 </Txt>
-              </Pressable>
+              </Press>
             );
           })}
         </View>
@@ -111,19 +140,22 @@ export default function Settings() {
           {CARDS.map((c) => {
             const on = s.settings.cards === c.id;
             return (
-              <Pressable
+              <Press
                 key={c.id}
                 accessibilityRole="button"
                 accessibilityState={{ selected: on }}
                 accessibilityLabel={`${c.name} cards`}
-                onPress={() => store.update((st) => setCards(st, c.id))}
+                onPress={() => {
+                  haptic.select();
+                  store.update((st) => setCards(st, c.id));
+                }}
                 style={[styles.swatch, styles.swatchRow, { backgroundColor: t.fieldBg, borderColor: on ? t.accent : 'transparent' }]}
               >
                 <View style={[styles.cardDot, { backgroundColor: c.swatch, borderColor: c.accent }]} />
                 <Txt size={14} weight={600} color={t.ink}>
                   {c.name}
                 </Txt>
-              </Pressable>
+              </Press>
             );
           })}
         </View>
@@ -150,7 +182,10 @@ export default function Settings() {
           first
           label="Weekly goals"
           detail={GOALS.map((g) => `${g.name} ${s.goalTargets[g.id]}`).join(' · ')}
-          onPress={() => setGoalsOpen((o) => !o)}
+          onPress={() => {
+            haptic.select();
+            setGoalsOpen((o) => !o);
+          }}
           expanded={goalsOpen}
         />
         {goalsOpen ? (
@@ -178,6 +213,7 @@ export default function Settings() {
           detail={s.calendar.imported ? `${calendarGroups(s).kept} events kept` : 'Not imported yet'}
           onPress={() => router.push('/calendar')}
         />
+        {s.calendar.imported ? <LinkRow label="Sync iPhone calendar now" detail={SYNC_DETAIL[sync]} onPress={syncCalendar} icon="none" /> : null}
         <LinkRow label="Back up my data" detail="Save to Files" onPress={backUp} />
         <LinkRow label="Restore from a backup" detail="Replaces this phone's data" onPress={restore} />
       </View>
@@ -200,20 +236,24 @@ function LinkRow({
   onPress,
   first = false,
   expanded,
+  icon = 'right',
 }: {
   label: string;
   detail?: string;
   onPress: () => void;
   first?: boolean;
   expanded?: boolean;
+  /** 'none' for rows that do something in place rather than open a page. */
+  icon?: 'right' | 'none';
 }) {
   const t = useTheme();
   return (
-    <Pressable
+    <Press
       accessibilityRole="button"
       accessibilityState={expanded === undefined ? undefined : { expanded }}
       onPress={onPress}
-      style={({ pressed }) => [styles.link, { borderTopWidth: first ? 0 : 1, borderTopColor: t.line, opacity: pressed ? 0.7 : 1 }]}
+      dip={0.98}
+      style={[styles.link, { borderTopWidth: first ? 0 : 1, borderTopColor: t.line }]}
     >
       <Txt size={15} color={t.ink} style={{ flex: 1 }}>
         {label}
@@ -223,21 +263,30 @@ function LinkRow({
           {detail}
         </Txt>
       ) : null}
-      <Icon name="right" size={18} color={t.muted} />
-    </Pressable>
+      {icon === 'right' ? <Icon name="right" size={18} color={t.muted} /> : null}
+    </Press>
   );
 }
 
 function StepButton({ label, icon, onPress }: { label: string; icon: 'minus' | 'plus'; onPress: () => void }) {
   const t = useTheme();
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={[styles.step, { backgroundColor: t.fieldBg }]}>
+    <Press
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={() => {
+        haptic.select();
+        onPress();
+      }}
+      dip={0.88}
+      style={[styles.step, { backgroundColor: t.fieldBg }]}
+    >
       {icon === 'plus' ? (
         <Icon name="plus" size={18} color={t.ink} strokeWidth={2.4} />
       ) : (
         <View style={{ width: 14, height: 2.4, borderRadius: 2, backgroundColor: t.ink }} />
       )}
-    </Pressable>
+    </Press>
   );
 }
 

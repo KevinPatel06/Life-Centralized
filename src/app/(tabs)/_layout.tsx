@@ -1,10 +1,12 @@
 import { Tabs, router } from 'expo-router';
 import type { BottomTabBarProps } from 'expo-router/tabs';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { haptic } from '../../ui/haptics';
 import { Icon, type IconName } from '../../ui/Icon';
 import { shadow } from '../../ui/kit';
+import { Press } from '../../ui/Press';
 import { useTheme } from '../../ui/ThemeContext';
 import { Txt } from '../../ui/Txt';
 
@@ -38,36 +40,44 @@ function TabBar({ state, navigateToTab }: BottomTabBarProps) {
         if (tab === 'add') {
           return (
             <View key="add" style={styles.slot}>
-              <Pressable
+              <Press
                 accessibilityRole="button"
                 accessibilityLabel="Quick add"
-                onPress={() => router.push('/quick-add')}
-                style={({ pressed }) => [styles.fab, { backgroundColor: t.fabBg, opacity: pressed ? 0.85 : 1 }]}
+                onPress={() => {
+                  haptic.tap();
+                  router.push('/quick-add');
+                }}
+                dip={0.9}
+                style={[styles.fab, { backgroundColor: t.fabBg }]}
               >
                 <Icon name="plus" size={26} strokeWidth={2.6} color={t.fabInk} />
-              </Pressable>
+              </Press>
             </View>
           );
         }
         const on = current === tab.name;
         const color = on ? t.tabOn : t.tabInk;
         return (
-          <Pressable
+          <Press
             key={tab.name}
             accessibilityRole="tab"
             accessibilityState={{ selected: on }}
             accessibilityLabel={tab.label}
             onPress={() => {
               const route = state.routes.find((r) => r.name === tab.name);
-              if (!on && route) navigateToTab(route.key);
+              if (!on && route) {
+                haptic.select();
+                navigateToTab(route.key);
+              }
             }}
+            dip={0.9}
             style={styles.tab}
           >
             <Icon name={tab.icon} size={22} color={color} />
             <Txt size={11} weight={on ? 600 : 500} color={color}>
               {tab.label}
             </Txt>
-          </Pressable>
+          </Press>
         );
       })}
     </View>

@@ -1,10 +1,13 @@
 // Shared building blocks, styled after the approved mockup.
-import type { ReactNode } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, type TextInputProps, View, type StyleProp, type ViewStyle } from 'react-native';
+import { type ReactNode, useEffect, useRef } from 'react';
+import { ScrollView, StyleSheet, TextInput, type TextInputProps, View, type StyleProp, type ViewStyle } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { font } from './fonts';
+import { haptic } from './haptics';
 import { Icon, type IconName } from './Icon';
+import { Press } from './Press';
 import type { Theme } from './theme';
 import { useTheme } from './ThemeContext';
 import { Txt } from './Txt';
@@ -76,77 +79,125 @@ export function PillButton({
   const t = useTheme();
   const color = selected ? t.ringInk : t.ink;
   return (
-    <Pressable
+    <Press
       accessibilityRole="button"
       accessibilityState={{ selected }}
       accessibilityLabel={accessibilityLabel ?? label}
-      onPress={onPress}
-      style={({ pressed }) => [styles.pill, { backgroundColor: selected ? t.accent : t.fieldBg, opacity: pressed ? 0.75 : 1 }, style]}
+      onPress={() => {
+        haptic.select();
+        onPress();
+      }}
+      style={[styles.pill, { backgroundColor: selected ? t.accent : t.fieldBg }, style]}
     >
       {icon ? <Icon name={icon} size={16} color={color} /> : null}
       <Txt size={14} weight={selected ? 600 : 500} color={color} numberOfLines={1}>
         {label}
       </Txt>
-    </Pressable>
+    </Press>
   );
 }
 
 export function PrimaryButton({ label, onPress, disabled = false }: { label: string; onPress: () => void; disabled?: boolean }) {
   const t = useTheme();
   return (
-    <Pressable
+    <Press
       accessibilityRole="button"
       accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [styles.primary, { backgroundColor: t.fabBg, opacity: disabled ? 0.4 : pressed ? 0.8 : 1 }]}
+      dip={0.98}
+      style={[styles.primary, { backgroundColor: t.fabBg, opacity: disabled ? 0.4 : 1 }]}
     >
       <Txt size={16} weight={600} color={t.fabInk}>
         {label}
       </Txt>
-    </Pressable>
+    </Press>
   );
 }
 
-/** The rounded tick box. The whole 44pt square is the target. */
-export function Tick({ checked, onPress, label, disabled = false }: { checked: boolean; onPress: () => void; label: string; disabled?: boolean }) {
+/** Pops a view when `on` turns true (not on first render). Used by the tick boxes. */
+export function usePop(on: boolean) {
+  const scale = useSharedValue(1);
+  const first = useRef(true);
+  useEffect(() => {
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    if (on) scale.set(withSequence(withTiming(1.22, { duration: 110 }), withSpring(1, { damping: 9, stiffness: 280 })));
+  }, [on, scale]);
+  return useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
+}
+
+/**
+ * The rounded tick box. The whole 44pt square is the target.
+ * Gives a light tap when pressed; pass `haptics={false}` when the caller picks its own feedback.
+ */
+export function Tick({
+  checked,
+  onPress,
+  label,
+  disabled = false,
+  haptics = true,
+}: {
+  checked: boolean;
+  onPress: () => void;
+  label: string;
+  disabled?: boolean;
+  haptics?: boolean;
+}) {
   const t = useTheme();
+  const pop = usePop(checked);
   return (
-    <Pressable
+    <Press
       accessibilityRole="checkbox"
       accessibilityState={{ checked, disabled }}
       accessibilityLabel={label}
       disabled={disabled}
-      onPress={onPress}
+      onPress={() => {
+        if (haptics) haptic.tap();
+        onPress();
+      }}
       hitSlop={4}
+      dip={0.88}
       style={styles.tick}
     >
-      <View
+      <Animated.View
         style={[
           styles.box,
           { borderColor: checked ? t.tickOn : t.tick, backgroundColor: checked ? t.tickOn : 'transparent', opacity: disabled ? 0.5 : 1 },
+          pop,
         ]}
       >
         {checked ? <Icon name="check" size={16} color={t.tickMark} strokeWidth={3} /> : null}
-      </View>
-    </Pressable>
+      </Animated.View>
+    </Press>
   );
 }
 
 /** The mockup's switch: 52×32 with a white knob, accent when on. */
 export function Switch({ value, onChange, label }: { value: boolean; onChange: (v: boolean) => void; label: string }) {
   const t = useTheme();
+  const x = useSharedValue(value ? 20 : 0);
+  useEffect(() => {
+    x.set(withSpring(value ? 20 : 0, { damping: 16, stiffness: 260 }));
+  }, [value, x]);
+  const knob = useAnimatedStyle(() => ({ transform: [{ translateX: x.get() }] }));
   return (
-    <Pressable
+    <Press
       accessibilityRole="switch"
       accessibilityState={{ checked: value }}
       accessibilityLabel={label}
-      onPress={() => onChange(!value)}
+      onPress={() => {
+        haptic.select();
+        onChange(!value);
+      }}
       hitSlop={8}
+      dip={0.94}
       style={[styles.switch, { backgroundColor: value ? t.accent : t.line }]}
     >
-      <View style={[styles.knob, { left: value ? 23 : 3 }]} />
-    </Pressable>
+      <Animated.View style={[styles.knob, knob]} />
+    </Press>
   );
 }
 
@@ -182,12 +233,12 @@ export function Label({ children }: { children: ReactNode }) {
 export function BackLink({ label, onPress }: { label: string; onPress: () => void }) {
   const t = useTheme();
   return (
-    <Pressable accessibilityRole="button" onPress={onPress} style={styles.back} hitSlop={8}>
+    <Press accessibilityRole="button" onPress={onPress} style={styles.back} hitSlop={8}>
       <Icon name="left" size={20} color={t.onBgMuted} />
       <Txt size={15} weight={500} color={t.onBgMuted}>
         {label}
       </Txt>
-    </Pressable>
+    </Press>
   );
 }
 
@@ -201,6 +252,7 @@ export const styles = StyleSheet.create({
   knob: {
     position: 'absolute',
     top: 3,
+    left: 3,
     width: 26,
     height: 26,
     borderRadius: 13,

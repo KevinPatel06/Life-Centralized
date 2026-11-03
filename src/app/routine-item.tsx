@@ -2,7 +2,7 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAppState, useStore } from '../data/StoreContext';
@@ -11,6 +11,7 @@ import type { BlockId, GoalId, Minutes, Slot } from '../domain/types';
 import { toISODate } from '../lib/dates';
 import { BLOCK_NAME } from '../lib/format';
 import { Field, Label, PillButton, PrimaryButton } from '../ui/kit';
+import { Press } from '../ui/Press';
 import { useTheme } from '../ui/ThemeContext';
 import { Txt } from '../ui/Txt';
 
@@ -157,11 +158,11 @@ export default function RoutineItemSheet() {
       <Field value={d.note} onChangeText={(note) => update({ note })} multiline placeholder="Optional" accessibilityLabel="Note" />
 
       <PrimaryButton label="Save" onPress={save} disabled={!d.title.trim()} />
-      <Pressable accessibilityRole="button" onPress={remove} style={styles.delete}>
+      <Press accessibilityRole="button" onPress={remove} style={styles.delete}>
         <Txt size={15} weight={600} color={t.cat.love}>
           Remove item
         </Txt>
-      </Pressable>
+      </Press>
     </ScrollView>
   );
 }

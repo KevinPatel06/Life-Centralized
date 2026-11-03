@@ -2,16 +2,15 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { pushPlan, removePlanEvent } from '../data/calendarSync';
+import { pushPlan } from '../data/calendarSync';
 import { useAppState, useStore } from '../data/StoreContext';
 import {
   QUICK_PICKS,
   type PlanDraft,
   canSavePlan,
-  deletePlan,
   draftFromPlan,
   newDraft,
   pickQuick,
@@ -24,6 +23,8 @@ import { addDays, daysBetween, toISODate, weekStartOf } from '../lib/dates';
 import { BLOCK_NAME, clockAmPm, weekRange, weekdayLetter, whenLabel } from '../lib/format';
 import { Icon } from '../ui/Icon';
 import { Field, Label, PillButton, PrimaryButton, Switch } from '../ui/kit';
+import { Press } from '../ui/Press';
+import { confirmDeletePlan } from '../ui/planActions';
 import { useTheme } from '../ui/ThemeContext';
 import { Txt } from '../ui/Txt';
 
@@ -79,19 +80,7 @@ export default function PlanSheet() {
 
   function remove() {
     if (!editing) return;
-    Alert.alert('Delete this plan?', draft.addToCalendar ? 'It will also be removed from your iPhone calendar.' : undefined, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () => {
-          const eventId = editing.calendarEventId;
-          store.update((st) => deletePlan(st, editing.id));
-          if (eventId) removePlanEvent(eventId).catch((e) => console.warn('Could not remove the iPhone event', e));
-          router.back();
-        },
-      },
-    ]);
+    confirmDeletePlan(store, editing.id, () => router.back());
   }
 
   return (
@@ -134,7 +123,7 @@ export default function PlanSheet() {
             const on = draft.date === d;
             const disabled = d < today || d > window.last;
             return (
-              <Pressable
+              <Press
                 key={d}
                 accessibilityRole="button"
                 accessibilityState={{ selected: on, disabled }}
@@ -149,7 +138,7 @@ export default function PlanSheet() {
                 <Txt kind="display" weight={600} size={17} color={on ? t.ringInk : t.ink}>
                   {Number(d.slice(8))}
                 </Txt>
-              </Pressable>
+              </Press>
             );
           })}
         </View>
@@ -178,7 +167,7 @@ export default function PlanSheet() {
               {(['at', 'range'] as const).map((mode) => {
                 const on = timed.kind === mode;
                 return (
-                  <Pressable
+                  <Press
                     key={mode}
                     accessibilityRole="button"
                     accessibilityState={{ selected: on }}
@@ -188,7 +177,7 @@ export default function PlanSheet() {
                     <Txt size={14} weight={600} color={on ? t.ringInk : t.muted}>
                       {mode === 'at' ? 'At a time' : 'From – to'}
                     </Txt>
-                  </Pressable>
+                  </Press>
                 );
               })}
             </View>
@@ -223,11 +212,11 @@ export default function PlanSheet() {
 
       <PrimaryButton label={editing ? 'Save' : 'Add plan'} onPress={save} disabled={!canSavePlan(draft, today)} />
       {editing ? (
-        <Pressable accessibilityRole="button" onPress={remove} style={styles.delete}>
+        <Press accessibilityRole="button" onPress={remove} style={styles.delete}>
           <Txt size={15} weight={600} color={t.cat.love}>
             Delete plan
           </Txt>
-        </Pressable>
+        </Press>
       ) : null}
     </ScrollView>
   );
@@ -256,7 +245,7 @@ function Wheel({ label, value, onChange, dark }: { label: string; value: Minutes
 function RoundButton({ icon, label, disabled, onPress }: { icon: 'left' | 'right'; label: string; disabled: boolean; onPress: () => void }) {
   const t = useTheme();
   return (
-    <Pressable
+    <Press
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ disabled }}
@@ -265,7 +254,7 @@ function RoundButton({ icon, label, disabled, onPress }: { icon: 'left' | 'right
       style={[styles.round, { backgroundColor: t.fieldBg, opacity: disabled ? 0.35 : 1 }]}
     >
       <Icon name={icon} size={18} color={t.ink} />
-    </Pressable>
+    </Press>
   );
 }
 

@@ -1,19 +1,23 @@
 // Task details (spec §4): title, urgency, tag, dates, plan it for, in progress, notes.
+// Changes save as you go (and when the sheet closes), so swiping it away never loses an edit.
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { router, useLocalSearchParams } from 'expo-router';
-import { type ReactNode, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAppState, useStore } from '../../data/StoreContext';
-import { TAGS, URGENCIES, type TaskPatch, deleteTask, updateTask } from '../../domain/tasks';
+import { TAGS, URGENCIES, type TaskPatch, deleteTask, restoreTask, updateTask } from '../../domain/tasks';
 import type { BlockId, ISODate } from '../../domain/types';
 import { addDays, fromISODate, toISODate } from '../../lib/dates';
 import { BLOCK_NAME } from '../../lib/format';
+import { haptic } from '../../ui/haptics';
 import { Icon } from '../../ui/Icon';
 import { Field, Label, PillButton, PrimaryButton, Switch } from '../../ui/kit';
+import { Press } from '../../ui/Press';
 import { useTheme } from '../../ui/ThemeContext';
 import { Txt } from '../../ui/Txt';
+import { useUndo } from '../../ui/Undo';
 
 type Draft = Required<Pick<TaskPatch, 'title' | 'urgency' | 'tag' | 'inProgress' | 'note'>> & {
   due: ISODate | null;
@@ -22,11 +26,14 @@ type Draft = Required<Pick<TaskPatch, 'title' | 'urgency' | 'tag' | 'inProgress'
 };
 
 const PLAN_BLOCKS: (BlockId | null)[] = [null, 'morning', 'afternoon', 'evening'];
+/** Typing pauses this long before the change is written. */
+const SAVE_AFTER_MS = 400;
 
 export default function TaskSheet() {
   const t = useTheme();
   const s = useAppState();
   const store = useStore();
+  const offerUndo = useUndo();
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const task = id ? s.tasks[id] : undefined;
@@ -46,7 +53,30 @@ export default function TaskSheet() {
       : null,
   );
 
-  if (!task || !draft) {
+  // The draft as of the last render, and whether it holds edits not yet written.
+  const latest = useRef(draft);
+  const unsaved = useRef(false);
+  useEffect(() => {
+    latest.current = draft;
+  }, [draft]);
+
+  /** Write any pending edits. A blank title is skipped by updateTask, so the old title stays. */
+  const save = useCallback(() => {
+    const d = latest.current;
+    if (!unsaved.current || !d || !id) return;
+    unsaved.current = false;
+    store.update((st) => updateTask(st, id, d, new Date()));
+  }, [id, store]);
+
+  useEffect(() => {
+    if (!unsaved.current) return;
+    const timer = setTimeout(save, SAVE_AFTER_MS);
+    return () => clearTimeout(timer);
+  }, [draft, save]);
+  useEffect(() => save, [save]); // and once more as the sheet closes
+
+  // Keep showing the last draft while the sheet slides away after a delete.
+  if (!draft) {
     return (
       <View style={[styles.sheet, { backgroundColor: t.card }]}>
         <Txt size={16} color={t.ink}>
@@ -55,26 +85,20 @@ export default function TaskSheet() {
       </View>
     );
   }
-  const update = (patch: Partial<Draft>) => setDraft((d) => (d ? { ...d, ...patch } : d));
+  const update = (patch: Partial<Draft>) => {
+    unsaved.current = true;
+    setDraft((d) => (d ? { ...d, ...patch } : d));
+  };
   const dark = t.dark || s.settings.cards === 'cocoa';
 
-  function save() {
-    store.update((st) => updateTask(st, task!.id, draft!, new Date()));
-    router.back();
-  }
-
   function remove() {
-    Alert.alert('Delete this task?', 'It will be gone for good.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () => {
-          store.update((st) => deleteTask(st, task!.id));
-          router.back();
-        },
-      },
-    ]);
+    save(); // so Undo brings back the latest version
+    const before = store.getState().tasks[id!];
+    if (!before) return;
+    haptic.tap();
+    store.update((st) => deleteTask(st, before.id));
+    offerUndo(`Deleted: ${before.title}`, () => store.update((st) => restoreTask(st, before)));
+    router.back();
   }
 
   return (
@@ -87,17 +111,22 @@ export default function TaskSheet() {
           {URGENCIES.map((u) => {
             const on = draft.urgency === u.id;
             return (
-              <Pressable
+              <Press
                 key={u.id}
                 accessibilityRole="button"
                 accessibilityState={{ selected: on }}
-                onPress={() => update({ urgency: u.id })}
+                onPress={() => {
+                  if (on) return;
+                  haptic.select();
+                  update({ urgency: u.id });
+                }}
+                dip={0.97}
                 style={[styles.segBtn, on && { backgroundColor: t.accent }]}
               >
                 <Txt size={14} weight={600} color={on ? t.ringInk : t.muted}>
                   {u.name}
                 </Txt>
-              </Pressable>
+              </Press>
             );
           })}
         </View>
@@ -156,12 +185,12 @@ export default function TaskSheet() {
         <Field value={draft.note} onChangeText={(note) => update({ note })} multiline placeholder="Anything worth remembering" accessibilityLabel="Notes" style={{ minHeight: 160 }} />
       </View>
 
-      <PrimaryButton label="Save" onPress={save} disabled={!draft.title.trim()} />
-      <Pressable accessibilityRole="button" onPress={remove} style={styles.delete}>
+      <PrimaryButton label="Done" onPress={() => router.back()} />
+      <Press accessibilityRole="button" onPress={remove} dip={0.96} style={styles.delete}>
         <Txt size={15} weight={600} color={t.cat.love}>
           Delete task
         </Txt>
-      </Pressable>
+      </Press>
     </ScrollView>
   );
 }
@@ -204,11 +233,11 @@ function DateRow({
               themeVariant={dark ? 'dark' : 'light'}
               onValueChange={(_, d) => onChange(toISODate(d))}
             />
-            <Pressable accessibilityRole="button" accessibilityLabel={`Clear ${label}`} onPress={() => onChange(null)} hitSlop={8} style={styles.clear}>
+            <Press accessibilityRole="button" accessibilityLabel={`Clear ${label}`} onPress={() => onChange(null)} hitSlop={8} dip={0.85} style={styles.clear}>
               <View style={{ transform: [{ rotate: '45deg' }] }}>
                 <Icon name="plus" size={18} color={t.muted} />
               </View>
-            </Pressable>
+            </Press>
           </>
         ) : (
           <PillButton label="Set" onPress={() => onChange(fallback)} accessibilityLabel={`Set ${label}`} />

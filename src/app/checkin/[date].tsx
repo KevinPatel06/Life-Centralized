@@ -1,7 +1,7 @@
 // The daily check-in sheet (spec §4 Check-in): one per day, grouped by block.
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAppState, useStore } from '../../data/StoreContext';
@@ -21,7 +21,9 @@ import type { BlockAnswer } from '../../domain/types';
 import { toISODate } from '../../lib/dates';
 import { BLOCK_NAME, weekdayName } from '../../lib/format';
 import { Buddy } from '../../ui/Buddy';
+import { haptic } from '../../ui/haptics';
 import { PillButton, PrimaryButton, Tick } from '../../ui/kit';
+import { Press } from '../../ui/Press';
 import { useTheme } from '../../ui/ThemeContext';
 import { Txt } from '../../ui/Txt';
 
@@ -55,6 +57,7 @@ export default function CheckinSheet() {
 
   function save() {
     store.update((st) => saveCheckin(st, view, draft!, new Date()));
+    haptic.success();
     router.back();
   }
 
@@ -189,16 +192,20 @@ function ItemRow({
 function Choice({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
   const t = useTheme();
   return (
-    <Pressable
+    <Press
       accessibilityRole="button"
       accessibilityState={{ selected }}
-      onPress={onPress}
+      onPress={() => {
+        haptic.select();
+        onPress();
+      }}
+      dip={0.96}
       style={[styles.choice, { borderColor: selected ? t.accent : t.line, backgroundColor: selected ? t.card : 'transparent' }]}
     >
       <Txt size={13.5} weight={600} color={t.ink}>
         {label}
       </Txt>
-    </Pressable>
+    </Press>
   );
 }
 
