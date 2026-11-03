@@ -132,7 +132,17 @@ export default function WeekScreen() {
               </View>
             ) : null}
             {d.cards.map((c) => (
-              <PlanCard key={c.key} card={c} onPress={c.planId ? () => router.push({ pathname: '/plan', params: { id: c.planId! } }) : undefined} />
+              <PlanCard
+                key={c.key}
+                card={c}
+                onPress={
+                  c.planId
+                    ? () => router.push({ pathname: '/plan', params: { id: c.planId! } })
+                    : c.eventKey
+                      ? () => router.push({ pathname: '/event/[key]', params: { key: c.eventKey! } })
+                      : undefined
+                }
+              />
             ))}
             {d.rows.map((r) => (
               <RoutineTick key={r.key} row={r} onPress={() => store.update((st) => toggleEntry(st, d.date, r.key, new Date()))} />

@@ -8,7 +8,7 @@ import { buildToday } from '../../domain/today';
 import { plural } from '../../lib/format';
 import { DoneBlock, LaterBlock, NowBlock, BuddySays } from '../../ui/blocks';
 import { Icon } from '../../ui/Icon';
-import { Screen } from '../../ui/kit';
+import { Screen, shadow } from '../../ui/kit';
 import { useTheme } from '../../ui/ThemeContext';
 import { Txt } from '../../ui/Txt';
 import { useNow } from '../../ui/useNow';
@@ -42,6 +42,17 @@ export default function TodayScreen() {
           </Txt>
         </View>
       </View>
+
+      {v.headsUp ? (
+        <View style={[styles.heads, { backgroundColor: t.card }, shadow(t)]}>
+          <View style={[styles.headsPic, { backgroundColor: t.icBg }]}>
+            <Icon name="cake" size={17} color={t.cat.love} />
+          </View>
+          <Txt size={14} color={t.ink} style={{ flex: 1 }}>
+            {v.headsUp}
+          </Txt>
+        </View>
+      ) : null}
 
       <View style={{ gap: 10 }}>
         {v.blocks.map((b) =>
@@ -103,6 +114,8 @@ const styles = StyleSheet.create({
   gear: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginTop: -4, marginRight: -6 },
   sub: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8 },
   dot: { width: 5, height: 5, borderRadius: 3 },
+  heads: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, paddingLeft: 8, paddingRight: 12, borderRadius: 16 },
+  headsPic: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   endDay: { minHeight: 52, borderRadius: 99, borderWidth: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   checkedIn: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
 });

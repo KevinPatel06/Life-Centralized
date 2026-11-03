@@ -162,9 +162,9 @@ export default function NotesScreen() {
                 ? () => router.push({ pathname: '/task/[id]', params: { id: a.id } })
                 : a.kind === 'plan'
                   ? () => router.push({ pathname: '/plan', params: { id: a.id } })
-                  : undefined;
+                  : () => router.push({ pathname: '/event/[key]', params: { key: a.id } });
             return (
-              <Pressable key={a.key} disabled={!open} onPress={open} accessibilityRole={open ? 'button' : 'text'} style={[styles.an, { backgroundColor: t.card }, shadow(t)]}>
+              <Pressable key={a.key} onPress={open} accessibilityRole="button" style={[styles.an, { backgroundColor: t.card }, shadow(t)]}>
                 <View style={[styles.pic, { backgroundColor: t.icBg }]}>
                   <Icon name={look.icon} size={18} color={look.color} />
                 </View>

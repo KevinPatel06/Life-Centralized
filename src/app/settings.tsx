@@ -4,6 +4,7 @@ import { Alert, Pressable, StyleSheet, View } from 'react-native';
 
 import { shareBackup, pickBackup } from '../data/backupFiles';
 import { useAppState, useStore } from '../data/StoreContext';
+import { calendarGroups } from '../domain/calendar';
 import { startOfDay } from '../domain/lifecycle';
 import { restoreFlow, setBackground, setCards, setCharcoalInDark, setGoalTarget } from '../domain/settings';
 import type { GoalId } from '../domain/types';
@@ -171,6 +172,11 @@ export default function Settings() {
             </Txt>
           </View>
         ) : null}
+        <LinkRow
+          label="iPhone calendar"
+          detail={s.calendar.imported ? `${calendarGroups(s).kept} events kept` : 'Not imported yet'}
+          onPress={() => router.push('/calendar')}
+        />
         <LinkRow label="Back up my data" detail="Save to Files" onPress={backUp} />
         <LinkRow label="Restore from a backup" detail="Replaces this phone's data" onPress={restore} />
       </View>
