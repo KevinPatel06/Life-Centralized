@@ -172,6 +172,7 @@ export default function Settings() {
             </Txt>
           </View>
         ) : null}
+        <LinkRow label="Routine blocks" detail="Mon – Sun" onPress={() => router.push('/routine')} />
         <LinkRow
           label="iPhone calendar"
           detail={s.calendar.imported ? `${calendarGroups(s).kept} events kept` : 'Not imported yet'}

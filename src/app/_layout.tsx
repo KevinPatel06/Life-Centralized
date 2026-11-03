@@ -97,6 +97,8 @@ function AppStack() {
         <Stack.Screen name="task/[id]" options={{ ...sheet, sheetAllowedDetents: [1] }} />
         <Stack.Screen name="event/[key]" options={{ ...sheet, sheetAllowedDetents: 'fitToContents' }} />
         <Stack.Screen name="calendar" />
+        <Stack.Screen name="routine" />
+        <Stack.Screen name="routine-item" options={{ ...sheet, sheetAllowedDetents: [1] }} />
       </Stack>
     </>
   );
