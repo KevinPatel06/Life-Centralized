@@ -12,12 +12,16 @@ import { BackLink, PrimaryButton, Switch } from '../ui/kit';
 import { useTheme } from '../ui/ThemeContext';
 import { Txt } from '../ui/Txt';
 
+/** Events shown per calendar before 'Show all'. A year of events can be long. */
+const PREVIEW = 5;
+
 export default function CalendarScreen() {
   const t = useTheme();
   const s = useAppState();
   const store = useStore();
   const insets = useSafeAreaInsets();
   const [status, setStatus] = useState<'idle' | 'working' | 'denied'>('idle');
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const { groups, kept, total } = useMemo(() => calendarGroups(s), [s]);
   const imported = s.calendar.imported;
 
@@ -40,7 +44,7 @@ export default function CalendarScreen() {
           iPhone calendar
         </Txt>
         <Txt size={14} color={t.onBgMuted}>
-          Everything from this week and the next 8 is here. Turn off a whole calendar, or uncheck single events.
+          Everything from this week through a year from today is here, so birthdays all year come in. Turn off a whole calendar, or uncheck single events.
         </Txt>
 
         {status === 'denied' ? (
@@ -65,7 +69,7 @@ export default function CalendarScreen() {
               </Txt>
               <Switch value={g.on} label={`Keep ${g.title}`} onChange={(on) => store.update((st) => setCalendarKept(st, g.id, on))} />
             </View>
-            {g.events.map((e) => (
+            {(expanded[g.id] ? g.events : g.events.slice(0, PREVIEW)).map((e) => (
               <Pressable
                 key={e.key}
                 accessibilityRole="checkbox"
@@ -87,9 +91,21 @@ export default function CalendarScreen() {
                 </View>
               </Pressable>
             ))}
+            {g.events.length > PREVIEW ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ expanded: !!expanded[g.id] }}
+                onPress={() => setExpanded((x) => ({ ...x, [g.id]: !x[g.id] }))}
+                style={styles.more}
+              >
+                <Txt size={14} weight={600} color={t.accent}>
+                  {expanded[g.id] ? 'Show fewer' : `Show all ${g.total}`}
+                </Txt>
+              </Pressable>
+            ) : null}
             {g.events.length === 0 ? (
               <Txt size={13} color={t.onBgMuted}>
-                Nothing in the next 8 weeks.
+                Nothing in the next year.
               </Txt>
             ) : null}
           </View>
@@ -118,5 +134,6 @@ const styles = StyleSheet.create({
   dot: { width: 12, height: 12, borderRadius: 4 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 48, paddingVertical: 4, paddingHorizontal: 2 },
   mk: { width: 20, height: 20, borderRadius: 7, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  more: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 2 },
   keepBar: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 14, paddingTop: 12 },
 });

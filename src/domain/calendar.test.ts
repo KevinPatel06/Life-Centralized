@@ -128,3 +128,8 @@ test("recording or clearing a plan's iPhone event id", () => {
   expect(setPlanEventId(set, 'p', undefined).plans.p).not.toHaveProperty('calendarEventId');
   expect(setPlanEventId(s, 'gone', 'ev-1')).toBe(s);
 });
+
+test('a re-read with nothing new changes nothing', () => {
+  const s = imported();
+  expect(mergeImport(s, cals, events, new Date(2026, 10, 4, 18, 0))).toBe(s);
+});

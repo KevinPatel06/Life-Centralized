@@ -36,7 +36,14 @@ export function mergeImport(s: AppState, cals: RawCalendar[], events: RawEvent[]
         date: toISODate(new Date(start)),
       };
     });
-  const next: AppState = { ...s, calendar: { ...s.calendar, imported: true, calendars, events: imported, syncedAt: now.toISOString() } };
+  const same =
+    s.calendar.imported &&
+    JSON.stringify(s.calendar.calendars) === JSON.stringify(calendars) &&
+    JSON.stringify(s.calendar.events) === JSON.stringify(imported);
+  // A year of events is a big record: leave it alone when nothing changed, so a re-read costs no write.
+  const next: AppState = same
+    ? s
+    : { ...s, calendar: { ...s.calendar, imported: true, calendars, events: imported, syncedAt: now.toISOString() } };
   return snapshotWeek(next, toISODate(now));
 }
 

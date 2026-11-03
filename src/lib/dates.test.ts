@@ -1,4 +1,4 @@
-import { addDays, daysBetween, fromISODate, minutesOf, planningWindow, startOfWeek, toISODate, weekStartOf, weekdayOf } from './dates';
+import { addDays, daysBetween, fromISODate, importWindow, minutesOf, planningWindow, startOfWeek, toISODate, weekStartOf, weekdayOf } from './dates';
 
 const at = (y: number, m: number, d: number, h = 0, min = 0) => new Date(y, m - 1, d, h, min);
 
@@ -60,5 +60,17 @@ describe('ISO date helpers (local calendar dates)', () => {
 
   test('minutesOf is minutes after local midnight', () => {
     expect(minutesOf(at(2026, 11, 2, 18, 40))).toBe(18 * 60 + 40);
+  });
+});
+
+describe('importWindow', () => {
+  test('runs from this Monday through one year after today', () => {
+    const w = importWindow(at(2026, 11, 4, 15, 0));
+    expect(w.start).toEqual(at(2026, 11, 2));
+    expect(w.end).toEqual(at(2027, 11, 5)); // exclusive: includes all of Nov 4, 2027
+  });
+
+  test('a leap day rolls to March 1st next year', () => {
+    expect(importWindow(at(2028, 2, 29, 9)).end).toEqual(at(2029, 3, 2));
   });
 });

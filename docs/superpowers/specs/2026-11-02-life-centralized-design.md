@@ -156,7 +156,7 @@ Priorities matter, but they come second to the routine. The app also has to make
   - A "Morning / Afternoon / Evening" plan is written as a timed event covering that block's template times for the day.
 
 ### 3.6 Imported iPhone events
-- **First import** reads **every calendar** on the phone, including the Birthdays calendar, for **this week plus 8 weeks ahead**. Recurring events are expanded into individual occurrences. The app's own "Centralized" calendar is excluded.
+- **Import** reads **every calendar** on the phone, including the Birthdays calendar, from **this week through one year from today** (owner decision, 2026-11-03), so a full year of birthdays comes in. Plans and the Week page still reach 8 weeks ahead. Recurring events are expanded into individual occurrences. The app's own "Centralized" calendar is excluded.
 - **Choosing what to keep:**
   - Each calendar has a switch, and each event has a checkbox.
   - Everything starts **kept**.
@@ -426,3 +426,4 @@ Before building features, ship a throwaway **spike IPA** through the real pipeli
 - The app's iPhone calendar is named **"Centralized"**.
 - The check-in happens **once a day** and only when the owner starts it: **End my day** on Today, or the **Check in** marker next to a day on Week. Check-ins never pop up by themselves. Days not yet checked in wait on Week to be finalized. The owner may change this later.
 - **Past weeks aren't browsable, but everything is kept as history** for a future view or export.
+- (2026-11-03) The iPhone calendar import reads **one year ahead** instead of 8 weeks, so all birthdays can be imported and kept or hidden.

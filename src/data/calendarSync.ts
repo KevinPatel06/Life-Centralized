@@ -1,11 +1,11 @@
 // Moving data between the phone's calendars and the store (spec §3.5, §3.6).
 import { mergeImport, planEventTimes, planPhoneAction, setPlanEventId } from '../domain/calendar';
-import { planningWindow } from '../lib/dates';
+import { importWindow } from '../lib/dates';
 import { ensureCentralized, permission, readPhone, removeEvent, upsertEvent } from './phoneCalendar';
 import type { Store } from './store';
 
 async function read(store: Store, now: Date): Promise<void> {
-  const { start, end } = planningWindow(now);
+  const { start, end } = importWindow(now);
   const { cals, events } = await readPhone(start, end);
   store.update((s) => mergeImport(s, cals, events, now));
 }

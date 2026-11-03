@@ -51,3 +51,8 @@ export function daysBetween(a: ISODate, b: ISODate): number {
 export function minutesOf(d: Date): number {
   return d.getHours() * 60 + d.getMinutes();
 }
+
+/** What the iPhone calendar import reads: this Monday through one year after today (end exclusive, local midnight). */
+export function importWindow(now: Date): { start: Date; end: Date } {
+  return { start: startOfWeek(now), end: new Date(now.getFullYear() + 1, now.getMonth(), now.getDate() + 1) };
+}
