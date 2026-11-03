@@ -134,3 +134,11 @@ export function planPhoneAction(p: Plan): 'create' | 'update' | 'delete' | 'none
   if (p.addToCalendar) return p.calendarEventId ? 'update' : 'create';
   return p.calendarEventId ? 'delete' : 'none';
 }
+
+/** Remember (or forget) the iPhone event a plan was written to. */
+export function setPlanEventId(s: AppState, planId: string, eventId: string | undefined): AppState {
+  const plan = s.plans[planId];
+  if (!plan || plan.calendarEventId === eventId) return s;
+  const { calendarEventId: _old, ...rest } = plan;
+  return { ...s, plans: { ...s.plans, [planId]: eventId ? { ...rest, calendarEventId: eventId } : rest } };
+}

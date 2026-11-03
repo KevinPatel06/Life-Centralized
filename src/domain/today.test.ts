@@ -96,3 +96,30 @@ test('today carries its check-in status for End my day', () => {
   s.days['2026-11-02'] = { ...s.days['2026-11-02'], checkin: { at: 'x', answers: {}, outcomes: { m: 'done', e: 'moved' }, unplannedTasks: [] } };
   expect(buildToday(s, new Date(2026, 10, 2, 21, 30)).checkin).toEqual({ state: 'done', summary: 'Checked in · 1 of 2 done' });
 });
+
+describe('birthdays on Today', () => {
+  function withBirthday(date: string): AppState {
+    const s = monday();
+    const [y, m, d] = date.split('-').map(Number);
+    s.calendar = {
+      ...s.calendar,
+      calendars: [...s.calendar.calendars, { id: 'bd', title: 'Birthdays', color: '#000', isBirthdays: true }],
+      events: [
+        ...s.calendar.events,
+        { key: 'b1', eventId: 'b1', calendarId: 'bd', title: "Person A's Birthday", start: localISO(y, m, d), end: localISO(y, m, d + 1), allDay: true, date },
+      ],
+    };
+    return s;
+  }
+
+  test('the heads-up line names a birthday within the week', () => {
+    expect(buildToday(withBirthday('2026-11-05'), new Date(2026, 10, 2, 18, 40)).headsUp).toBe("Person A's Birthday is Thursday · in 3 days");
+    expect(buildToday(monday(), new Date(2026, 10, 2, 18, 40)).headsUp).toBeUndefined();
+  });
+
+  test('the buddy flags a birthday today only when nothing is open', () => {
+    const s = withBirthday('2026-11-02');
+    expect(buildToday(s, new Date(2026, 10, 2, 18, 40)).buddy).toBe('Item E first. If it slips, Thursday is the backup.');
+    expect(buildToday(s, new Date(2026, 10, 2, 13, 0)).buddy).toBe("Person A's Birthday is today. Maybe send a note?");
+  });
+});

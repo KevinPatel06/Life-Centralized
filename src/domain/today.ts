@@ -1,6 +1,7 @@
 // The Today screen as data (spec §4 Today): the current block in full, everything else compact.
 import { addDays, minutesOf, toISODate } from '../lib/dates';
 import { BLOCK_NAME, clock, clockAmPm, plural, shortDate, weekdayName, weekdayShort, whenLabel } from '../lib/format';
+import { headsUp } from './calendar';
 import { type CheckinStatus, checkinStatus } from './checkin';
 import { type AssembledBlock, type DayEntry, type TickEntry, assembleDay, isTickable } from './day';
 import { effectiveUrgency } from './tasks';
@@ -28,6 +29,8 @@ export interface TodayView {
   blocks: TodayBlock[];
   buddy: string;
   tomorrow?: string;
+  /** The next birthday or anniversary within 7 days. */
+  headsUp?: string;
   checkin: CheckinStatus;
 }
 
@@ -138,7 +141,9 @@ export function buildToday(s: AppState, now: Date): TodayView {
     tomorrowFirst = next.blocks.flatMap((b) => b.entries.filter(isTickable)).map(rowTitle)[0];
     if (first) result.tomorrow = join([`Tomorrow: ${BLOCK_NAME[first.id]} at ${clock(first.start)}`, tomorrowFirst]);
   }
-  result.buddy = buddyLine(s, today, phase, blocks[nowIndex], view[nowIndex], view[0], tomorrowFirst);
+  const heads = headsUp(s, today);
+  if (heads) result.headsUp = heads;
+  result.buddy = buddyLine(s, today, phase, blocks[nowIndex], view[nowIndex], view[0], tomorrowFirst, heads);
   return result;
 }
 
@@ -155,6 +160,7 @@ function buddyLine(
   currentView: TodayBlock | undefined,
   first: TodayBlock | undefined,
   tomorrowFirst: string | undefined,
+  heads: string | undefined,
 ): string {
   if (phase === 'before') return first ? `${first.name} starts at ${first.range.split('–')[0]}. Easy start.` : 'Easy start.';
   if (phase === 'after') return tomorrowFirst ? `Day's done. Rest up. Tomorrow starts with ${tomorrowFirst}.` : "Day's done. Rest up.";
@@ -165,6 +171,7 @@ function buddyLine(
     const backup = open.type === 'routine' && open.item.backup && open.item.backup.date > today ? open.item.backup.date : undefined;
     return `${rowTitle(open)} first.${backup ? ` If it slips, ${weekdayName(backup)} is the backup.` : ''}`;
   }
+  if (heads?.endsWith(' is today')) return `${heads}. Maybe send a note?`;
   const loose = Object.values(s.tasks).find((t) => !t.doneAt && !t.planned && effectiveUrgency(t, today).urgency === 'now');
   if (loose) return `Room for one more? ${loose.title}.`;
   if (currentView.rows.length > 0) return `${currentView.name} is done. Nice.`;

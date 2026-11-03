@@ -6,6 +6,7 @@ import { AppState, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { bootState, refreshDay } from '../data/boot';
+import { syncFromPhone } from '../data/calendarSync';
 import { openAppDb } from '../data/openDb';
 import { type Store, createStore } from '../data/store';
 import { StoreProvider } from '../data/StoreContext';
@@ -25,6 +26,7 @@ export default function RootLayout() {
         const s = await createStore(await openAppDb());
         bootState(s, new Date());
         if (alive) setStore(s);
+        syncFromPhone(s, new Date()).catch((e) => console.warn('Calendar sync failed', e));
       } catch (e) {
         if (alive) setFailure(e instanceof Error ? e.message : String(e));
       }
@@ -37,7 +39,9 @@ export default function RootLayout() {
   useEffect(() => {
     if (!store) return;
     const sub = AppState.addEventListener('change', (state) => {
-      if (state === 'active') refreshDay(store, new Date());
+      if (state !== 'active') return;
+      refreshDay(store, new Date());
+      syncFromPhone(store, new Date()).catch((e) => console.warn('Calendar sync failed', e));
     });
     // Roll the day over at midnight even if the app stays open.
     let day = toISODate(new Date());

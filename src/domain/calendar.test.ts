@@ -9,6 +9,7 @@ import {
   planPhoneAction,
   setCalendarKept,
   setEventKept,
+  setPlanEventId,
 } from './calendar';
 import { visibleEvents } from './day';
 import { openDays } from './lifecycle';
@@ -116,4 +117,14 @@ test('what a plan needs on the phone', () => {
   expect(planPhoneAction({ ...p, calendarEventId: 'e' })).toBe('update');
   expect(planPhoneAction({ ...p, addToCalendar: false, calendarEventId: 'e' })).toBe('delete');
   expect(planPhoneAction({ ...p, addToCalendar: false })).toBe('none');
+});
+
+test("recording or clearing a plan's iPhone event id", () => {
+  const s = routineState();
+  s.plans = { p: { id: 'p', title: 'Plan', date: '2026-11-05', when: { kind: 'at', time: 600 }, kind: 'other', note: '', addToCalendar: true, createdAt: 'x' } };
+  const set = setPlanEventId(s, 'p', 'ev-1');
+  expect(set.plans.p.calendarEventId).toBe('ev-1');
+  expect(setPlanEventId(set, 'p', 'ev-1')).toBe(set);
+  expect(setPlanEventId(set, 'p', undefined).plans.p).not.toHaveProperty('calendarEventId');
+  expect(setPlanEventId(s, 'gone', 'ev-1')).toBe(s);
 });

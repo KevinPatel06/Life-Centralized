@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { pushPlan, removePlanEvent } from '../data/calendarSync';
 import { useAppState, useStore } from '../data/StoreContext';
 import {
   QUICK_PICKS,
@@ -66,7 +67,13 @@ export default function PlanSheet() {
   }
 
   function save() {
-    store.update((st) => savePlan(st, draft, new Date(), editing?.id).state);
+    let savedId = '';
+    store.update((st) => {
+      const saved = savePlan(st, draft, new Date(), editing?.id);
+      savedId = saved.id;
+      return saved.state;
+    });
+    pushPlan(store, savedId).catch((e) => console.warn('Could not update the iPhone calendar', e));
     router.back();
   }
 
@@ -78,7 +85,9 @@ export default function PlanSheet() {
         text: 'Delete',
         style: 'destructive',
         onPress: () => {
+          const eventId = editing.calendarEventId;
           store.update((st) => deletePlan(st, editing.id));
+          if (eventId) removePlanEvent(eventId).catch((e) => console.warn('Could not remove the iPhone event', e));
           router.back();
         },
       },
