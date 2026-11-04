@@ -1,4 +1,5 @@
 // Today's block pieces, after the mockup: finished blocks dashed, the current block open, later blocks compact.
+// Any compact block opens on tap, in a plain look so only the current block is highlighted.
 import { StyleSheet, View } from 'react-native';
 
 import type { TodayBlock, TodayLine, TodayRow } from '../domain/today';
@@ -13,10 +14,17 @@ import { Txt } from './Txt';
 
 export const BLOCK_ICON: Record<BlockId, IconName> = { morning: 'sun', afternoon: 'clock', evening: 'chart', winddown: 'moon' };
 
-export function DoneBlock({ block }: { block: TodayBlock }) {
+export function DoneBlock({ block, onOpen }: { block: TodayBlock; onOpen: () => void }) {
   const t = useTheme();
   return (
-    <View style={[styles.done, { borderColor: t.doneLine }]} accessibilityLabel={`${block.name}, finished. ${block.summary}`}>
+    <Press
+      onPress={onOpen}
+      accessibilityRole="button"
+      accessibilityLabel={`${block.name}, finished. ${block.summary}`}
+      accessibilityHint="Shows what was in this block"
+      dip={0.98}
+      style={[styles.done, { borderColor: t.doneLine }]}
+    >
       <View style={[styles.dot, { backgroundColor: t.cat[BLOCK_COLOR[block.id]] }]} />
       <Txt size={14} weight={600}>
         {block.name}
@@ -30,32 +38,50 @@ export function DoneBlock({ block }: { block: TodayBlock }) {
           Partly
         </Txt>
       ) : null}
-    </View>
+    </Press>
   );
 }
 
-export function NowBlock({
+/**
+ * A block shown in full. The current block (`peek` off) is the highlighted one with the NOW ring.
+ * Any other block the user taps open (`peek` on) uses the plain card look, so the current block still stands out.
+ */
+export function OpenBlock({
   block,
+  peek = false,
   canTick,
   onTick,
   onLine,
   onOpenTask,
+  onClose,
 }: {
   block: TodayBlock;
+  peek?: boolean;
   canTick: boolean;
   /** Ticks give no haptic of their own here: the caller picks a tap or, for the block's last item, a success. */
   onTick: (key: string) => void;
   onLine: (line: TodayLine) => void;
   onOpenTask: (taskId: string) => void;
+  /** Set on peeked blocks: tapping the header folds the block back up. */
+  onClose?: () => void;
 }) {
   const t = useTheme();
+  const kicker = peek ? (block.state === 'done' ? 'EARLIER' : 'LATER') : 'NOW';
+  const empty = block.rows.length === 0 && block.lines.length === 0;
   return (
-    <View style={[styles.now, { backgroundColor: t.nowBg, borderColor: t.nowRing }, shadow(t)]}>
-      <View style={styles.head}>
+    <View style={[styles.now, peek ? { backgroundColor: t.card, borderColor: 'transparent' } : { backgroundColor: t.nowBg, borderColor: t.nowRing }, shadow(t)]}>
+      <Press
+        disabled={!onClose}
+        onPress={onClose}
+        accessibilityRole={onClose ? 'button' : 'header'}
+        accessibilityHint={onClose ? 'Folds this block back up' : undefined}
+        dip={0.98}
+        style={styles.head}
+      >
         <BlockIcon id={block.id} t={t} />
         <View style={{ flex: 1 }}>
-          <Txt size={12} weight={600} color={t.nowKicker} style={{ letterSpacing: 1 }}>
-            NOW
+          <Txt size={12} weight={600} color={peek ? t.muted : t.nowKicker} style={{ letterSpacing: 1 }}>
+            {kicker}
           </Txt>
           <Txt kind="display" weight={600} size={22} color={t.ink}>
             {block.name}
@@ -64,9 +90,10 @@ export function NowBlock({
         <Txt size={14} weight={500} color={t.muted}>
           {block.range}
         </Txt>
-      </View>
+        {onClose ? <Icon name="up" size={18} color={t.muted} strokeWidth={2.4} /> : null}
+      </Press>
       {block.rows.length > 0 ? (
-        <View style={[styles.tasks, { backgroundColor: t.taskBg }]}>
+        <View style={[styles.tasks, { backgroundColor: peek ? t.icBg : t.taskBg }]}>
           {block.rows.map((row) => (
             <RowLine key={row.key} row={row} canTick={canTick} onTick={onTick} onOpenTask={onOpenTask} />
           ))}
@@ -94,6 +121,11 @@ export function NowBlock({
           ) : null}
         </Press>
       ))}
+      {peek && empty ? (
+        <Txt size={13.5} color={t.muted} style={{ paddingHorizontal: 4 }}>
+          {block.summary || 'Nothing planned'}
+        </Txt>
+      ) : null}
     </View>
   );
 }
@@ -146,10 +178,16 @@ function RowLine({
   );
 }
 
-export function LaterBlock({ block }: { block: TodayBlock }) {
+export function LaterBlock({ block, onOpen }: { block: TodayBlock; onOpen: () => void }) {
   const t = useTheme();
   return (
-    <View style={[styles.later, { backgroundColor: t.card }, shadow(t)]}>
+    <Press
+      onPress={onOpen}
+      accessibilityRole="button"
+      accessibilityHint="Shows what's planned in this block"
+      dip={0.98}
+      style={[styles.later, { backgroundColor: t.card }, shadow(t)]}
+    >
       <BlockIcon id={block.id} t={t} />
       <View style={{ flex: 1 }}>
         <Txt kind="display" weight={600} size={18} color={t.ink}>
@@ -162,7 +200,8 @@ export function LaterBlock({ block }: { block: TodayBlock }) {
       <Txt size={14} weight={500} color={t.muted}>
         {block.range}
       </Txt>
-    </View>
+      <Icon name="down" size={18} color={t.muted} strokeWidth={2.4} />
+    </Press>
   );
 }
 

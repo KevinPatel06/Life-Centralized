@@ -3,7 +3,7 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { router, useLocalSearchParams } from 'expo-router';
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAppState, useStore } from '../../data/StoreContext';
@@ -13,7 +13,7 @@ import { addDays, fromISODate, toISODate } from '../../lib/dates';
 import { BLOCK_NAME } from '../../lib/format';
 import { haptic } from '../../ui/haptics';
 import { Icon } from '../../ui/Icon';
-import { Field, Label, PillButton, PrimaryButton, Switch } from '../../ui/kit';
+import { FormScroll, Field, Label, PillButton, PrimaryButton, Switch } from '../../ui/kit';
 import { Press } from '../../ui/Press';
 import { useTheme } from '../../ui/ThemeContext';
 import { Txt } from '../../ui/Txt';
@@ -102,7 +102,7 @@ export default function TaskSheet() {
   }
 
   return (
-    <ScrollView style={{ backgroundColor: t.card }} contentContainerStyle={[styles.sheet, { paddingBottom: insets.bottom + 24 }]} keyboardShouldPersistTaps="handled">
+    <FormScroll style={{ backgroundColor: t.card }} contentContainerStyle={[styles.sheet, { paddingBottom: insets.bottom + 24 }]}>
       <Field value={draft.title} onChangeText={(title) => update({ title })} accessibilityLabel="Task title" style={styles.title} />
 
       <View style={styles.fld}>
@@ -191,7 +191,7 @@ export default function TaskSheet() {
           Delete task
         </Txt>
       </Press>
-    </ScrollView>
+    </FormScroll>
   );
 }
 

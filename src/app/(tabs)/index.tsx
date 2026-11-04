@@ -1,13 +1,14 @@
 import { router } from 'expo-router';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, LayoutAnimationConfig, LinearTransition } from 'react-native-reanimated';
 
 import { useAppState, useStore } from '../../data/StoreContext';
 import { canTick, toggleEntry } from '../../domain/ticks';
 import { buildToday } from '../../domain/today';
+import type { BlockId } from '../../domain/types';
 import { plural } from '../../lib/format';
-import { DoneBlock, LaterBlock, NowBlock, BuddySays } from '../../ui/blocks';
+import { DoneBlock, LaterBlock, OpenBlock, BuddySays } from '../../ui/blocks';
 import { haptic } from '../../ui/haptics';
 import { Icon } from '../../ui/Icon';
 import { Screen, shadow } from '../../ui/kit';
@@ -23,10 +24,16 @@ export default function TodayScreen() {
   const now = useNow();
   const v = useMemo(() => buildToday(s, now), [s, now]);
   const tickable = canTick(s, v.date, v.date);
+  // Blocks other than the current one that the user has tapped open. The current block is always open.
+  const [opened, setOpened] = useState<BlockId[]>([]);
+  const toggle = (id: BlockId) => {
+    haptic.select();
+    setOpened((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
+  };
 
-  /** A light tap per tick; a success buzz when it finishes the current block. */
+  /** A light tap per tick; a success buzz when it finishes the block. */
   function tick(key: string) {
-    const block = v.blocks.find((b) => b.state === 'now');
+    const block = v.blocks.find((b) => b.rows.some((r) => r.key === key));
     const row = block?.rows.find((r) => r.key === key);
     const finishes = !!block && !!row && !row.done && block.rows.every((r) => r.key === key || r.done);
     if (finishes) haptic.success();
@@ -69,24 +76,29 @@ export default function TodayScreen() {
 
       <LayoutAnimationConfig skipEntering>
         <View style={{ gap: 10 }}>
-          {v.blocks.map((b) => (
-            // Keyed by block and state, so a block that changes state fades into its new look.
-            <Animated.View key={`${b.id}:${b.state}`} entering={FadeIn.duration(260)} layout={LinearTransition.duration(240)}>
-              {b.state === 'done' ? (
-                <DoneBlock block={b} />
-              ) : b.state === 'now' ? (
-                <NowBlock
-                  block={b}
-                  canTick={tickable}
-                  onTick={tick}
-                  onLine={(line) => line.planId && router.push({ pathname: '/plan', params: { id: line.planId } })}
-                  onOpenTask={(id) => router.push({ pathname: '/task/[id]', params: { id } })}
-                />
-              ) : (
-                <LaterBlock block={b} />
-              )}
-            </Animated.View>
-          ))}
+          {v.blocks.map((b) => {
+            const peek = b.state !== 'now' && opened.includes(b.id);
+            return (
+              // Keyed by block, state and open, so a block that changes look fades into it.
+              <Animated.View key={`${b.id}:${b.state}:${peek}`} entering={FadeIn.duration(260)} layout={LinearTransition.duration(240)}>
+                {b.state === 'now' || peek ? (
+                  <OpenBlock
+                    block={b}
+                    peek={peek}
+                    canTick={tickable}
+                    onTick={tick}
+                    onLine={(line) => line.planId && router.push({ pathname: '/plan', params: { id: line.planId } })}
+                    onOpenTask={(id) => router.push({ pathname: '/task/[id]', params: { id } })}
+                    {...(peek ? { onClose: () => toggle(b.id) } : {})}
+                  />
+                ) : b.state === 'done' ? (
+                  <DoneBlock block={b} onOpen={() => toggle(b.id)} />
+                ) : (
+                  <LaterBlock block={b} onOpen={() => toggle(b.id)} />
+                )}
+              </Animated.View>
+            );
+          })}
         </View>
       </LayoutAnimationConfig>
 

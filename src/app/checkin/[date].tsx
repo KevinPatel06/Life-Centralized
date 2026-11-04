@@ -1,7 +1,7 @@
 // The daily check-in sheet (spec §4 Check-in): one per day, grouped by block.
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAppState, useStore } from '../../data/StoreContext';
@@ -22,7 +22,7 @@ import { toISODate } from '../../lib/dates';
 import { BLOCK_NAME, weekdayName } from '../../lib/format';
 import { Buddy } from '../../ui/Buddy';
 import { haptic } from '../../ui/haptics';
-import { PillButton, PrimaryButton, Tick } from '../../ui/kit';
+import { FormScroll, PillButton, PrimaryButton, Tick } from '../../ui/kit';
 import { Press } from '../../ui/Press';
 import { useTheme } from '../../ui/ThemeContext';
 import { Txt } from '../../ui/Txt';
@@ -62,7 +62,7 @@ export default function CheckinSheet() {
   }
 
   return (
-    <ScrollView style={{ backgroundColor: t.card }} contentContainerStyle={[styles.sheet, { paddingBottom: insets.bottom + 24 }]}>
+    <FormScroll style={{ backgroundColor: t.card }} contentContainerStyle={[styles.sheet, { paddingBottom: insets.bottom + 24 }]}>
       <View style={styles.head}>
         <Buddy size={48} />
         <View style={{ flex: 1 }}>
@@ -124,7 +124,7 @@ export default function CheckinSheet() {
       })}
 
       <PrimaryButton label="Save" onPress={save} disabled={!canSaveCheckin(view, draft)} />
-    </ScrollView>
+    </FormScroll>
   );
 }
 

@@ -1,6 +1,6 @@
 // Shared building blocks, styled after the approved mockup.
 import { type ReactNode, useEffect, useRef } from 'react';
-import { ScrollView, StyleSheet, TextInput, type TextInputProps, View, type StyleProp, type ViewStyle } from 'react-native';
+import { ScrollView, type ScrollViewProps, StyleSheet, TextInput, type TextInputProps, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -38,10 +38,18 @@ export function Screen({
   const pad: ViewStyle = { paddingTop: insets.top + 16, paddingHorizontal: 18, paddingBottom: tabBar ? TAB_BAR_SPACE : insets.bottom + 24, gap: 16 };
   if (!scroll) return <View style={[{ flex: 1, backgroundColor: t.bg }, pad, contentStyle]}>{children}</View>;
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: t.bg }} contentContainerStyle={[pad, contentStyle]} keyboardShouldPersistTaps="handled">
+    <FormScroll style={{ flex: 1, backgroundColor: t.bg }} contentContainerStyle={[pad, contentStyle]}>
       {children}
-    </ScrollView>
+    </FormScroll>
   );
+}
+
+/**
+ * A ScrollView that makes room for the keyboard: iOS insets it by the keyboard's height and scrolls
+ * the focused field into view. Use it for every scrolling page or sheet with a text field.
+ */
+export function FormScroll(props: ScrollViewProps) {
+  return <ScrollView automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" {...props} />;
 }
 
 export function Card({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
@@ -212,7 +220,8 @@ export function Field({ style, multiline, ...rest }: TextInputProps) {
       {...rest}
       style={[
         { minHeight: multiline ? 120 : 48, borderRadius: 14, backgroundColor: t.fieldBg, color: t.ink, paddingHorizontal: 14, fontFamily: font('body', 500), fontSize: 16 },
-        multiline ? { paddingTop: 12, paddingBottom: 12, textAlignVertical: 'top' } : null,
+        // Capped so a long note scrolls inside the box, keeping the cursor above the keyboard.
+        multiline ? { paddingTop: 12, paddingBottom: 12, textAlignVertical: 'top', maxHeight: 260 } : null,
         style,
       ]}
     />

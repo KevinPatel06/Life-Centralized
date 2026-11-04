@@ -2,7 +2,7 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { pushPlan } from '../data/calendarSync';
@@ -22,7 +22,7 @@ import type { BlockId, Minutes, When } from '../domain/types';
 import { addDays, daysBetween, toISODate, weekStartOf } from '../lib/dates';
 import { BLOCK_NAME, clockAmPm, weekRange, weekdayLetter, whenLabel } from '../lib/format';
 import { Icon } from '../ui/Icon';
-import { Field, Label, PillButton, PrimaryButton, Switch } from '../ui/kit';
+import { FormScroll, Field, Label, PillButton, PrimaryButton, Switch } from '../ui/kit';
 import { Press } from '../ui/Press';
 import { confirmDeletePlan } from '../ui/planActions';
 import { useTheme } from '../ui/ThemeContext';
@@ -84,10 +84,9 @@ export default function PlanSheet() {
   }
 
   return (
-    <ScrollView
+    <FormScroll
       style={{ backgroundColor: t.card }}
       contentContainerStyle={[styles.sheet, { paddingBottom: insets.bottom + 24 }]}
-      keyboardShouldPersistTaps="handled"
     >
       <Txt kind="display" weight={600} size={24} color={t.ink} accessibilityRole="header">
         {editing ? 'Edit plan' : 'New plan'}
@@ -218,7 +217,7 @@ export default function PlanSheet() {
           </Txt>
         </Press>
       ) : null}
-    </ScrollView>
+    </FormScroll>
   );
 }
 

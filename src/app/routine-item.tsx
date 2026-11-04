@@ -2,7 +2,7 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAppState, useStore } from '../data/StoreContext';
@@ -10,7 +10,7 @@ import { type ItemPatch, editRoutine, removeItem, updateItem } from '../domain/r
 import type { BlockId, GoalId, Minutes, Slot } from '../domain/types';
 import { toISODate } from '../lib/dates';
 import { BLOCK_NAME } from '../lib/format';
-import { Field, Label, PillButton, PrimaryButton } from '../ui/kit';
+import { FormScroll, Field, Label, PillButton, PrimaryButton } from '../ui/kit';
 import { Press } from '../ui/Press';
 import { useTheme } from '../ui/ThemeContext';
 import { Txt } from '../ui/Txt';
@@ -84,7 +84,7 @@ export default function RoutineItemSheet() {
   }
 
   return (
-    <ScrollView style={{ backgroundColor: t.card }} contentContainerStyle={[styles.sheet, { paddingBottom: insets.bottom + 24 }]} keyboardShouldPersistTaps="handled">
+    <FormScroll style={{ backgroundColor: t.card }} contentContainerStyle={[styles.sheet, { paddingBottom: insets.bottom + 24 }]}>
       <Txt kind="display" weight={600} size={22} color={t.ink} accessibilityRole="header">
         {DAYS[weekday]} routine item
       </Txt>
@@ -163,7 +163,7 @@ export default function RoutineItemSheet() {
           Remove item
         </Txt>
       </Press>
-    </ScrollView>
+    </FormScroll>
   );
 }
 
