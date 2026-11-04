@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Life Centralized: app icon drafts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Lexend:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#F8F4ED; --ink:#2A241D; --muted:#6A6052; --card:#DCE6D5; --ring:#47705A; --line:#E0D6C5; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:Lexend, system-ui, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 28px 18px 56px; }
+  h1 { font-family:Fredoka, sans-serif; font-weight:700; font-size:34px; line-height:1.1; margin:0 0 8px; }
+  h2 { font-family:Fredoka, sans-serif; font-weight:600; font-size:22px; margin:40px 0 12px; }
+  p.lede { color:var(--muted); font-size:15px; line-height:1.5; margin:0; }
+  .grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap:14px; margin-top:24px; }
+  .opt { background:#fff8; border:1px solid var(--line); border-radius:22px; padding:18px; display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; }
+  .opt .ic { width:132px; height:132px; filter: drop-shadow(0 8px 14px rgba(70,50,30,.18)); }
+  .opt h3 { font-family:Fredoka, sans-serif; font-weight:600; font-size:18px; margin:4px 0 0; }
+  .opt p { margin:0; font-size:13.5px; line-height:1.45; color:var(--muted); }
+  .tag { font-size:11.5px; font-weight:600; padding:3px 10px; border-radius:99px; background:#F2B04A; color:#2A1C00; }
+  .home { border-radius:28px; padding:22px 14px 18px; display:grid; grid-template-columns:repeat(4, 1fr); gap:18px 8px; }
+  .home.light { background: linear-gradient(160deg, #E9DCC6, #C9D8C0); }
+  .home.dark { background: linear-gradient(160deg, #1D1E1C, #2B3A31); }
+  .app { display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .app svg { width:62px; height:62px; filter: drop-shadow(0 3px 6px rgba(0,0,0,.18)); }
+  .app span { font-size:11px; font-family:-apple-system, system-ui, sans-serif; }
+  .home.light .app span { color:#2A241D; }
+  .home.dark .app span { color:#EFEFEA; }
+  .tiny { display:flex; gap:16px; align-items:center; flex-wrap:wrap; margin-top:4px; }
+  .tiny div { display:flex; flex-direction:column; align-items:center; gap:4px; font-size:11px; color:var(--muted); }
+  .tiny svg { width:29px; height:29px; }
+  .note { margin-top:36px; padding:16px 18px; border-radius:18px; background:var(--card); font-size:14.5px; line-height:1.5; }
+</style>
+</head>
+<body>
+<main>
+  <h1>App icon drafts</h1>
+  <p class="lede">Six directions for Life Centralized, drawn in the app's own colours (linen, sage, the amber "now" chip and the buddy's mint). Each one is shown large, then on a home screen, then at Settings size, which is where weak icons fall apart.</p>
+
+  <div class="grid" id="grid"></div>
+
+  <h2>On a home screen</h2>
+  <div class="home light" id="homeLight"></div>
+  <div style="height:12px"></div>
+  <div class="home dark" id="homeDark"></div>
+
+  <h2>Settings / Spotlight size</h2>
+  <div class="tiny" id="tiny"></div>
+
+  <div class="note"><strong>My pick: A (Now block).</strong> It is the app's Today screen in one glance: one finished block, the current block highlighted, two still to come. It stays readable at 29&nbsp;px. E is the one with the most personality if you'd rather lead with the buddy. Tell me a letter (or "A but with the buddy's mint") and I'll make the real 1024&nbsp;px icon and splash.</div>
+</main>
+
+<script>
+const clip = (id) => `<clipPath id="sq${id}"><rect width="100" height="100" rx="22.4"/></clipPath>`;
+const BUDDY = `
+  <path d="M32 6c14 0 24 10 24 24v20c0 4-3 7-7 7H15c-4 0-7-3-7-7V30C8 16 18 6 32 6z" fill="#45D6A4"/>
+  <circle cx="24" cy="30" r="4.2" fill="#121831"/><circle cx="40" cy="30" r="4.2" fill="#121831"/>
+  <circle cx="25.6" cy="28.4" r="1.4" fill="#fff"/><circle cx="41.6" cy="28.4" r="1.4" fill="#fff"/>
+  <path d="M26.5 39.5c3 3 8 3 11 0" stroke="#121831" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <circle cx="17" cy="38" r="3.2" fill="#FF7AA8" opacity=".7"/><circle cx="47" cy="38" r="3.2" fill="#FF7AA8" opacity=".7"/>`;
+
+const ICONS = [
+  { id:'A', name:'Now block', pick:true,
+    why:'Four day blocks stacked like the Today screen. The top one is done (dashed), the current one is lit, the rest are waiting.',
+    body:`
+      <rect width="100" height="100" fill="#47705A"/>
+      <rect x="18" y="16" width="64" height="12" rx="5" fill="none" stroke="#CCDCC2" stroke-width="2.4" stroke-dasharray="4 3.2"/>
+      <rect x="18" y="34" width="64" height="21" rx="7" fill="#F8F4ED"/>
+      <circle cx="28.5" cy="44.5" r="4.2" fill="#F2B04A"/>
+      <path d="M37 44.5h35" stroke="#47705A" stroke-width="3.6" stroke-linecap="round" opacity=".55"/>
+      <rect x="18" y="61" width="64" height="11" rx="5" fill="#F8F4ED" opacity=".38"/>
+      <rect x="18" y="77" width="64" height="11" rx="5" fill="#F8F4ED" opacity=".22"/>` },
+  { id:'B', name:'Day dial',
+    why:'Your day as a clock face: morning, afternoon, evening and wind-down, each in its block colour, with the hand on the current one.',
+    body:`
+      <rect width="100" height="100" fill="#F8F4ED"/>
+      <g fill="none" stroke-linecap="round">
+        <path d="M55.82 22.61A28 28 0 0 1 77.39 44.18" stroke="#2F7A50" stroke-width="7"/>
+        <path d="M77.39 55.82A28 28 0 0 1 55.82 77.39" stroke="#66707C" stroke-width="11"/>
+        <path d="M44.18 77.39A28 28 0 0 1 22.61 55.82" stroke="#2F5FCF" stroke-width="7"/>
+        <path d="M22.61 44.18A28 28 0 0 1 44.18 22.61" stroke="#6248C2" stroke-width="7"/>
+        <path d="M50 50L61.3 61.3" stroke="#2A241D" stroke-width="4.5"/>
+      </g>
+      <circle cx="50" cy="50" r="6.5" fill="#2A241D"/>
+      <circle cx="50" cy="50" r="2.2" fill="#F2B04A"/>` },
+  { id:'C', name:'The buddy',
+    why:'Just the little mint alien from Today, on the sage "now" green. Friendly and unlike any other icon on your phone.',
+    body:`
+      <rect width="100" height="100" fill="#CCDCC2"/>
+      <g transform="translate(14 15) scale(1.125)">${BUDDY}</g>` },
+  { id:'D', name:'Day arc',
+    why:'The sun travelling over the horizon, with a stop for each block. The big amber sun is where you are now.',
+    body:`
+      <rect width="100" height="100" fill="#2E5540"/>
+      <path d="M20 68A30 30 0 0 1 80 68" fill="none" stroke="#F8F4ED" stroke-width="2.4" stroke-dasharray="1 4.2" stroke-linecap="round" opacity=".7"/>
+      <path d="M16 68h68" stroke="#F8F4ED" stroke-width="3.4" stroke-linecap="round"/>
+      <circle cx="24.02" cy="53" r="4" fill="#F8F4ED"/>
+      <circle cx="39.74" cy="39.81" r="14" fill="#F2B04A" opacity=".22"/>
+      <circle cx="39.74" cy="39.81" r="8.5" fill="#F2B04A"/>
+      <circle cx="60.26" cy="39.81" r="4" fill="none" stroke="#F8F4ED" stroke-width="2.2"/>
+      <circle cx="75.98" cy="53" r="4" fill="none" stroke="#F8F4ED" stroke-width="2.2"/>
+      <path d="M30 78h40" stroke="#F8F4ED" stroke-width="3" stroke-linecap="round" opacity=".35"/>` },
+  { id:'E', name:'Buddy on duty',
+    why:'The buddy peeking over your current block, which has a tick waiting. Personality plus the routine idea in one.',
+    body:`
+      <rect width="100" height="100" fill="#F8F4ED"/>
+      <g transform="translate(24.4 20) scale(.8)">${BUDDY}</g>
+      <rect x="15" y="51" width="70" height="32" rx="10" fill="#CCDCC2" stroke="#47705A" stroke-width="2.6"/>
+      <rect x="24" y="60" width="14" height="14" rx="4.6" fill="#F1F5EE" stroke="#47705A" stroke-width="2.6"/>
+      <path d="M27.6 67.2l2.8 2.8 4.6-5" fill="none" stroke="#47705A" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M45 67h30" stroke="#47705A" stroke-width="4" stroke-linecap="round" opacity=".45"/>` },
+  { id:'F', name:'The tick',
+    why:"The app's own rounded tick box, ticked, with the amber now dot. Simple and calm, closest to a classic to-do icon.",
+    body:`
+      <rect width="100" height="100" fill="#47705A"/>
+      <rect x="25" y="27" width="50" height="50" rx="16" fill="#F8F4ED"/>
+      <path d="M37 52.5l8.5 8.5L63.5 42" fill="none" stroke="#47705A" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="74" cy="27" r="8" fill="#F2B04A" stroke="#47705A" stroke-width="3"/>` },
+];
+
+let n = 0;
+const svg = (ic) => { n++; return `<svg viewBox="0 0 100 100" role="img" aria-label="Icon ${ic.id}: ${ic.name}"><defs>${clip(n)}</defs><g clip-path="url(#sq${n})">${ic.body}</g></svg>`; };
+
+document.getElementById('grid').innerHTML = ICONS.map((ic) => `
+  <div class="opt">
+    <div class="ic">${svg(ic)}</div>
+    ${ic.pick ? '<span class="tag">My pick</span>' : ''}
+    <h3>${ic.id} · ${ic.name}</h3>
+    <p>${ic.why}</p>
+  </div>`).join('');
+
+const home = () => ICONS.map((ic) => `<div class="app">${svg(ic)}<span>Life ${ic.id}</span></div>`).join('')
+  + ['#5B8DEF', '#F06A6A'].map((c, i) => `<div class="app"><svg viewBox="0 0 100 100"><rect width="100" height="100" rx="22.4" fill="${c}"/></svg><span>${i ? 'Other' : 'Some app'}</span></div>`).join('');
+document.getElementById('homeLight').innerHTML = home();
+document.getElementById('homeDark').innerHTML = home();
+document.getElementById('tiny').innerHTML = ICONS.map((ic) => `<div>${svg(ic)}${ic.id}</div>`).join('');
+</script>
+</body>
+</html>
